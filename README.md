@@ -20,7 +20,9 @@ The page is laid out like a strip-chart recorder's paper: what happened is drawn
   - "this session carries a 600k-token context";
   - "agent X uses an expensive model";
   - "issue ABC-12 has failed 3 runs in a row";
-  - "at this pace the window fills at 18:40".
+  - "at this pace the window fills at 18:40";
+  - "agent X is running on its fallback";
+  - "the window fills at 20:40 and agent X is working; move it to its fallback now?".
 - **Today**: Claude spend against the 7-day average, the open window, this week, and how much went to cache reads.
 - **Analysis**, filterable by time (today, this window, 7 days), by kind (Multica, long-running, interactive, scheduled, side session) and by text:
   - **who spent it**, with the top sessions;
@@ -31,7 +33,7 @@ The page is laid out like a strip-chart recorder's paper: what happened is drawn
   - **projects**, and Multica **agents** and **issues**;
   - **sessions**: a sortable table with each session's context size;
   - **Multica runs**: outcome per agent, failure reasons, and the run list with cancel buttons;
-  - **agents and switches**: change an agent's model or thinking level, and pause or resume a watchdog that honours a stop file.
+  - **agents and fallbacks**: change an agent's model or thinking level; see each agent's fallback chain and where it runs now; move it to a fallback or back; edit the chain; read recent moves; pause or resume a watchdog that honours a stop file.
 - **English and Turkish**: the page follows the browser's language. The EN/TR switch in the corner is remembered.
 - **Light and dark**: the page follows the system setting.
 
@@ -83,10 +85,46 @@ cp config.example.json ~/.config/quotaboard/config.json
 | `multica.command` | How to call the CLI, e.g. `["multica", "--profile", "…", "--workspace-id", "…"]`. Default: `["multica"]` when it is installed. |
 | `multica.days` | How many days of runs to load (default 7). |
 | `multica.agent_files` + `multica.push_command` | Set these if you keep agents as files with a front matter (`name`, `model`, `thinking_level`, `runtime_id`, `id`) and push them to Multica with your own script. A model change then rewrites the file, runs the push command and commits the file (`commit: false` to skip the commit). Without them, the page uses `multica agent update`. |
+| `multica.fallback` | Fallback switching done by your own watchdog; see below. |
 | `stop_files` | Switches: `name`, `path` of the stop file, optional `log` to tail, and `description`. |
 | `rules.expensive_models` | Model name parts to flag (default `["fable"]`). |
 | `rules.opus_allowed_agents` | If set, any other Claude agent on Opus is flagged. |
 | `rules.session_share`, `rules.context_warning`, `rules.long_run_minutes` | Advice thresholds (defaults 0.3, 400000, 60). |
+
+### Fallbacks
+
+quotaboard does not switch agents on its own. The page has to be open for anything to happen, and every action is confirmed. Automatic switching belongs to a watchdog that keeps running, for example from cron or launchd. quotaboard shows that watchdog's state and lets you act through its commands:
+
+```json
+"multica": {
+  "fallback": {
+    "status_command":  ["python3", "~/watchdog.py", "status"],
+    "switch_command":  ["python3", "~/watchdog.py", "switch", "{agent_id}", "{n}"],
+    "restore_command": ["python3", "~/watchdog.py", "restore", "{agent_id}"]
+  }
+}
+```
+
+`status_command` prints one JSON object:
+
+```json
+{
+  "chains":   {"<agent id>": {"name": "Builder",
+                              "own": {"runtime_id": "…", "model": "claude-opus-5-5", "thinking_level": "medium"},
+                              "fallback": [{"runtime_id": "…", "model": "gpt-6-luna", "thinking_level": ""}],
+                              "now": {"runtime_id": "…", "model": "…", "thinking_level": "…"},
+                              "on": null}},
+  "held":     {"<agent id>": {"issue": "ABC-12", "since": "<ISO time>", "back_at": "<ISO time or null>", "manual": false}},
+  "closed":   {"<runtime id>|<model>": "<ISO time the limit reopens>"},
+  "runtimes": {"<runtime id>": {"name": "Codex", "online": true}},
+  "events":   ["2026-11-01 17:23 Builder: moved to Codex gpt-6-luna"]
+}
+```
+
+- `on` is the index of the fallback the agent is on now, or `null` when it runs its own model.
+- `switch_command` moves the agent to fallback `{n}`, counted from 1. `restore_command` moves it back to its own model.
+
+When `agent_files` is set, the chain is the agent file's `fallback:` front-matter line (a JSON list of `runtime_id`, `model` and optional `thinking_level`), and the page can edit it. The line is the watchdog's: nothing is pushed to Multica.
 
 The config lives in `~/.config/quotaboard/` (or wherever `QUOTABOARD_CONFIG` points), outside the repo. So do the Claude percentages you type in (`claude-percentages.json`) and the quota readings (`history.jsonl`, kept for 14 days).
 

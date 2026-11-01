@@ -502,10 +502,25 @@ def src_agents():
     for a in raw:
         rid = a.get("runtime_id") or ""
         rt = runtimes.get(rid, {})
-        out.append({"id": a.get("id"), "file": a.get("file"), "name": a.get("name"), "model": a.get("model") or "",
+        out.append({"id": a.get("id"), "file": a.get("file"), "fallback": a.get("fallback") if isinstance(a.get("fallback"), list) else None,
+                    "name": a.get("name"), "model": a.get("model") or "",
                     "thinking": a.get("thinking_level") or "", "runtime_id": rid, "runtime": rt.get("name", rid[:8] or "?"),
                     "provider": rt.get("provider", "")})
     return out
+
+
+def src_fallback():
+    """Fallback state from the configured status command (contract in README: chains, held, closed, runtimes, events)."""
+    fb = (CFG.get("multica") or {}).get("fallback") or {}
+    d = json.loads(sh(fb["status_command"], timeout=120))
+    events = []
+    for line in d.get("events") or []:
+        m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d) (.*)", line)
+        if m:
+            at = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M").astimezone(timezone.utc).isoformat()
+            events.append({"at": at, "text": m.group(2)})
+    d["events"] = events
+    return d
 
 
 def src_stop_files():
@@ -530,6 +545,8 @@ if CFG["antigravity"]:
     SOURCES.append(("antigravity", src_antigravity, 300))
 if CFG.get("multica"):
     SOURCES += [("multica", src_multica, 300), ("agents", src_agents, 30), ("issues", src_issues, 600)]
+    if (CFG["multica"].get("fallback") or {}).get("status_command"):
+        SOURCES.append(("fallback", src_fallback, 60))
 NEXT = {}
 
 
@@ -743,9 +760,44 @@ def view():
            "token_types": {span: {"tokens": d["tokens"], "usd": [round(u, 2) for u in d["usd"]]} for span, d in types.items()},
            "history": HIST.since(72),
            "options": {"claude": CLAUDE_MODELS, "thinking": THINKING, "other": other_models(agents, runs)}}
+    out["fallback"] = fallback_view(D.get("fallback"), agents, runtimes, live, t_now)
     out["today_ccusage"] = next((d["usd"] for d in out["daily"] if d["day"] == today), None)
     out["advice"] = advice(out, runs, issues, t_now)
     return out
+
+
+def fallback_view(fb, agents, runtimes, live, t_now):
+    """Who has a fallback chain, who is on one, and each entry's state, ready for the page."""
+    conf = (CFG.get("multica") or {}).get("fallback") or {}
+    if not conf.get("status_command"):
+        return None
+    fb = fb or {"chains": {}, "held": {}, "closed": {}, "runtimes": {}, "events": []}
+    rts = {rid: {"name": r["name"], "provider": r["provider"], "online": True} for rid, r in runtimes.items()}
+    for rid, r in (fb.get("runtimes") or {}).items():
+        rts.setdefault(rid, {"name": r.get("name", rid[:8]), "provider": ""})["online"] = bool(r.get("online"))
+    closed = {k: v for k, v in (fb.get("closed") or {}).items() if ts(v) and ts(v) > t_now}
+
+    def entry(h):
+        rt = rts.get(h.get("runtime_id") or "", {})
+        return {"runtime_id": h.get("runtime_id") or "", "model": h.get("model") or "", "thinking": h.get("thinking_level") or "",
+                "runtime": rt.get("name", (h.get("runtime_id") or "?")[:8]), "provider": rt.get("provider", ""),
+                "online": rt.get("online", True), "closed_until": closed.get(f"{h.get('runtime_id')}|{h.get('model')}")}
+    busy = {r["agent"] for r in live}
+    rows = []
+    for aid, c in (fb.get("chains") or {}).items():
+        held = (fb.get("held") or {}).get(aid)
+        rows.append({"id": aid, "name": c.get("name"), "own": entry(c.get("own") or {}), "chain": [entry(h) for h in c.get("fallback") or []],
+                     "now": entry(c.get("now") or {}), "on": c.get("on"), "held": held, "busy": c.get("name") in busy})
+    known = {(a["runtime_id"], a["model"]) for a in agents if a["runtime_id"] and a["model"]}
+    for r in rows:
+        known |= {(e["runtime_id"], e["model"]) for e in [r["own"]] + r["chain"] if e["runtime_id"] and e["model"]}
+    models = defaultdict(set)
+    for rid, m in known:
+        models[rid].add(m)
+    return {"rows": rows, "events": fb.get("events") or [], "editable": bool((CFG.get("multica") or {}).get("agent_files")),
+            "runtimes": [{"id": rid, "name": r["name"], "provider": r["provider"], "online": r["online"], "models": sorted(models.get(rid, []))}
+                         for rid, r in sorted(rts.items(), key=lambda x: x[1]["name"])],
+            "agents_without": sorted(a["name"] for a in agents if not any(r["id"] == a["id"] for r in rows) and a.get("file"))}
 
 
 def model_mode():
@@ -838,6 +890,21 @@ def advice(v, runs, issues, t_now):
             if hit or not v["multica"]:
                 add("medium", "agy_empty", account=name, group=row["group"], window=limit_name(row["limit"]),
                     left=row["left"], reset=row["reset"], agents=hit)
+
+    fb = v.get("fallback") or {}
+    for r in fb.get("rows", []):
+        if r["on"] is not None:
+            held = r["held"] or {}
+            add("medium", "on_fallback", {"type": "restore", "agent_id": r["id"], "agent": r["name"]}, agent=r["name"],
+                target=f"{r['now']['runtime']} {r['now']['model']}", since=held.get("since"), back=held.get("back_at"),
+                manual=held.get("manual", False))
+        elif w and w["full_before_end"] and r["own"]["provider"] == "claude" and r["busy"]:
+            n = next((k for k, e in enumerate(r["chain"]) if e["online"] and not e["closed_until"]), None)
+            if n is not None:
+                e = r["chain"][n]
+                add("medium", "pre_switch", {"type": "switch", "agent_id": r["id"], "agent": r["name"], "n": n + 1,
+                                             "target": f"{e['runtime']} {e['model']}"},
+                    agent=r["name"], at=w["full_at"], target=f"{e['runtime']} {e['model']}")
 
     sch = v["by_kind"].get("scheduled", {})
     if sch.get("today", 0) >= 5:
@@ -951,7 +1018,83 @@ def act_claude_percentages(body):
     return {"message": "Saved. Type them in again when the app's numbers change; the page shows their age."}
 
 
-ACTIONS = {"/api/claude": act_claude_percentages, "/api/model": act_model, "/api/cancel": act_cancel,
+def fb_conf():
+    fb = (CFG.get("multica") or {}).get("fallback") or {}
+    if not fb.get("status_command"):
+        raise ValueError("fallback is not configured")
+    return fb
+
+
+def fb_agent(body):
+    aid = body.get("agent_id", "")
+    rows = {r["id"]: r for r in (fallback_view(DATA.get("fallback"), DATA.get("agents") or [],
+                                                (DATA.get("multica") or {}).get("runtimes") or {}, [], now()) or {}).get("rows", [])}
+    if aid not in rows:
+        raise ValueError("this agent has no fallback chain")
+    return rows[aid]
+
+
+def fill(cmd, **kw):
+    return [str(c).replace("{agent_id}", kw.get("agent_id", "")).replace("{n}", str(kw.get("n", ""))) for c in cmd]
+
+
+def act_fallback_switch(body):
+    fb, r = fb_conf(), fb_agent(body)
+    n = body.get("n")
+    if not isinstance(n, int) or not 1 <= n <= len(r["chain"]):
+        raise ValueError("no such fallback")
+    out = sh(fill(fb["switch_command"], agent_id=r["id"], n=n), timeout=120)
+    refresh("fallback", src_fallback)
+    return {"message": f"{r['name']} moved to fallback {n}. It stays there until you return it or its own quota reopens.",
+            "output": out.strip()[-400:]}
+
+
+def act_fallback_restore(body):
+    fb, r = fb_conf(), fb_agent(body)
+    out = sh(fill(fb["restore_command"], agent_id=r["id"]), timeout=120)
+    refresh("fallback", src_fallback)
+    return {"message": f"{r['name']} is back on its own model.", "output": out.strip()[-400:]}
+
+
+def act_fallback_chain(body):
+    """Write an agent's `fallback` front-matter line (agent files only). It is the watchdog's list; nothing is pushed."""
+    fb_conf()
+    m = CFG["multica"]
+    if not m.get("agent_files"):
+        raise ValueError("chains can only be edited when agents are kept as files")
+    agents = {a["id"]: a for a in src_agents()}
+    a = agents.get(body.get("agent_id", ""))
+    if not a or not a.get("file"):
+        raise ValueError("no such agent file")
+    known = (DATA.get("multica") or {}).get("runtimes") or {}
+    chain = []
+    for e in body.get("chain") or []:
+        rid, model, th = str(e.get("runtime_id", "")), str(e.get("model", "")).strip(), str(e.get("thinking", "") or "")
+        if rid not in known or not re.fullmatch(r"[\w.:/@+-]{1,120}", model) or th not in ("",) + tuple(THINKING):
+            raise ValueError(f"invalid fallback entry: {rid[:8]} {model}")
+        chain.append({"runtime_id": rid, "model": model, **({"thinking_level": th} if th else {})})
+    path = os.path.join(x(m["agent_files"]), a["file"])
+    text = open(path, encoding="utf-8").read()
+    _, head, rest = text.split("---\n", 2)
+    head = re.sub(r"^fallback: .*\n?", "", head, flags=re.M)
+    if chain:
+        head = head.rstrip("\n") + "\nfallback: " + json.dumps(chain, ensure_ascii=False) + "\n"
+    new = f"---\n{head}---\n{rest}"
+    if new == text:
+        return {"message": "Nothing to change."}
+    open(path, "w", encoding="utf-8").write(new)
+    note = ""
+    if m.get("commit", True):
+        c = subprocess.run(["git", "commit", "--only", "-m", f"quotaboard: {a['name']} fallback chain ({len(chain)})", "--", path],
+                           capture_output=True, text=True, cwd=os.path.dirname(path))
+        note = " File committed." if c.returncode == 0 else " Commit failed: " + (c.stderr or c.stdout).strip()[:200]
+    refresh("agents", src_agents)
+    refresh("fallback", src_fallback)
+    return {"message": f"{a['name']}: fallback chain saved ({len(chain)}).{note} The watchdog reads it on its next turn."}
+
+
+ACTIONS = {"/api/fallback/switch": act_fallback_switch, "/api/fallback/restore": act_fallback_restore,
+           "/api/fallback/chain": act_fallback_chain, "/api/claude": act_claude_percentages, "/api/model": act_model, "/api/cancel": act_cancel,
            "/api/stop-file": act_stop_file}
 
 

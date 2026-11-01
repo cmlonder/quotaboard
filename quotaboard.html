@@ -211,6 +211,26 @@ select.sel { border: 1px solid var(--rule-2); background: var(--sheet); border-r
 
 pre.log { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); white-space: pre-wrap; margin: 8px 0 0; max-height: 180px; overflow: auto; border-left: 1px solid var(--rule-2); padding-left: 10px; }
 .switch { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.fb-row { display: grid; grid-template-columns: minmax(150px, 1.1fr) minmax(0, 3fr) auto; gap: 8px 18px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: center; }
+@media (max-width: 860px) { .fb-row { grid-template-columns: 1fr; } }
+.fb-name b { display: block; }
+.fb-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fb-step { display: inline-flex; flex-direction: column; border: 1px solid var(--rule-2); border-radius: 6px; padding: 4px 9px; font-size: 12px; line-height: 1.35; background: var(--sheet); min-width: 0; }
+.fb-step .m { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.fb-step .r { color: var(--ink-3); font-size: 11.5px; }
+.fb-step.cur { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.fb-step.closed .m { text-decoration: line-through; text-decoration-color: var(--pen-red); }
+.fb-step .st { font-size: 11px; }
+.fb-arrow { color: var(--ink-3); font-size: 12px; }
+.fb-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.fb-edit { display: grid; gap: 6px; margin-top: 8px; }
+.fb-edit-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+.fb-edit-row input { border: 1px solid var(--rule-2); background: var(--sheet); border-radius: 6px; padding: 4px 8px; font-family: var(--mono); font-size: 12px; width: 230px; }
+.icon-btn { border: 1px solid var(--rule-2); background: var(--sheet); border-radius: 5px; width: 26px; height: 26px; cursor: pointer; display: inline-grid; place-items: center; padding: 0; }
+.icon-btn:hover { border-color: var(--ink-3); }
+.events { list-style: none; margin: 0; padding: 0; }
+.events li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 12.5px; }
+.events time { font-family: var(--mono); color: var(--ink-3); font-size: 12px; }
 .switch-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 dialog { border: 0; border-radius: 10px; background: var(--sheet); color: var(--ink); max-width: 500px; width: calc(100% - 32px); padding: 20px 22px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.4); }
@@ -321,6 +341,8 @@ dialog h3 { font-size: 16px; margin-bottom: 8px; }
     </div>
 
     <div class="panel" id="p-agents">
+      <div class="block" id="fb_block" style="margin-bottom:38px"><div class="block-head"><h3 data-i="fallbacks"></h3><span class="aside" id="fb_aside"></span></div><div id="fallbacks"></div>
+        <div class="grid2" style="margin-top:22px"><div><h3 data-i="fb_moves"></h3><div id="fb_events"></div></div><div id="fb_add"></div></div></div>
       <div class="grid2">
         <div class="block"><div class="block-head"><h3 data-i="agent_models"></h3><span class="aside" id="model_note"></span></div><div class="table-wrap" id="agents"></div></div>
         <div class="block"><div class="block-head"><h3 data-i="switches"></h3></div><div id="switches"></div></div>
@@ -363,7 +385,7 @@ const I18N = {
     unreadable: "Not readable: {x} do not expose quota.", unreadable1: "Not readable: {x} does not expose quota.",
     no_ccusage: "ccusage is not installed (npm i -g ccusage), so Claude spending stays empty.",
     show_all: "Show all {n}", show_less: "Show fewer", nothing: "Nothing to flag right now.",
-    tab_spend: "Spending", tab_sessions: "Sessions", tab_runs: "Multica runs", tab_agents: "Agents & switches",
+    tab_spend: "Spending", tab_sessions: "Sessions", tab_runs: "Multica runs", tab_agents: "Agents & fallbacks",
     span_today: "Today", span_window: "This window", span_week: "7 days", search: "Search agent, issue, title, project…",
     k_multica: "Multica", k_long: "Long-running", k_interactive: "Interactive", k_scheduled: "Scheduled", k_side: "Side session",
     who: "Who spent it", heatmap: "When it burns", heatmap_aside: "Claude $, hour by day, last 7 days",
@@ -379,6 +401,15 @@ const I18N = {
     r_all: "All", r_live: "Running", r_failed_f: "Failed", r_done_f: "Done", all_agents: "All agents",
     c_agent: "Agent · issue", c_model: "Model", c_status: "Status", c_started: "Started", c_min: "Min", c_tokens: "Tokens",
     no_issue: "no issue", cancel_run: "Cancel", cancel_run_long: "Cancel run",
+    fallbacks: "Fallback chains", fb_moves: "Recent moves", fb_aside: "{n} agents · {m} on a fallback now",
+    fb_own: "own", fb_now_own: "on its own model", fb_now_on: "on fallback {n} since {s}", fb_back: "back {t}", fb_back_manual: "until you return it",
+    fb_closed: "limit until {t}", fb_offline: "runtime offline", fb_busy: "running", fb_switch: "Move to #{n}", fb_restore: "Return", fb_edit: "Edit chain",
+    fb_save: "Save chain", fb_add_entry: "Add", fb_runtime: "Runtime", fb_model: "Model", fb_none: "No agent has a fallback chain yet.",
+    fb_add_chain: "Give an agent a chain", fb_pick_agent: "Pick an agent", fb_no_moves: "No moves yet.", fb_readonly: "Chains are edited in the agents' files.",
+    cf_fb_switch_t: "Move {a} to fallback {n}?", cf_fb_switch: "{a} → <b>{x}</b>", cf_fb_switch_sub: "The watchdog's own command does it (multica agent update). It stays there until you return it, or until its own limit reopens if that limit is known.",
+    cf_fb_restore_t: "Return {a} to its own model?", cf_fb_restore_sub: "A run already going keeps its model; the next one uses the agent's own.",
+    cf_fb_chain_t: "Save {a}'s fallback chain?", cf_fb_chain_sub: "Writes the fallback line in the agent's file and commits it. Nothing goes to Multica; the watchdog reads it on its next turn.",
+    restore: "Return to own model", move_now: "Move to {x} now",
     agent_models: "Agent models", switches: "Stop switches", a_agent: "Agent", a_runtime: "Runtime", a_model: "Model", a_thinking: "Thinking",
     in_model_name: "in the model name", apply: "Apply", no_agents_list: "No agents.",
     model_note_file: "Rewrites the agent's file, runs the push command, commits the file.", model_note_mx: "Runs multica agent update.",
@@ -391,7 +422,7 @@ const I18N = {
     nothing_match: "Nothing matches these filters.", showing: "Showing {a} of {b}. Search to narrow it down.",
     updated: "recording · updated {t}", unreachable: "server unreachable — is quotaboard running?",
     all_fresh: "all sources fresh", collecting: "collecting: {x}", not_readable: "{x} not readable",
-    src_blocks: "window", src_daily: "daily", src_scan: "sessions", src_quotas: "quotas", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "issues", src_agents: "agents", src_stop_files: "switches",
+    src_blocks: "window", src_daily: "daily", src_scan: "sessions", src_quotas: "quotas", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "issues", src_agents: "agents", src_stop_files: "switches", src_fallback: "fallbacks",
     other: "Other", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago", in_h: "{h} h {m} min", in_m: "{m} min", in_d: "{d} d {h} h",
     adv: {
       window_fills: ["At this pace the Claude window fills at {at}, before it resets at {end}.", "{usd} so far at {per_hour} an hour; the cap is estimated at {cap}. The app shows the real figure."],
@@ -408,6 +439,8 @@ const I18N = {
       agy_empty_agents: " Agents on this account using it: {a}; they can move to another account's runtime.",
       scheduled_spend: ["Scheduled tasks spent {usd} today.", "Running them less often would save that."],
       switch_stopped: ["{name} is stopped.", "{description}"],
+      on_fallback: ["{agent} is running on its fallback, {target}.", "Since {since}; {back}."],
+      pre_switch: ["Claude's window fills at {at} and {agent} is working. Move it to {target} now?", "Its chain's first open fallback. The watchdog would do this anyway once a run hits the limit; moving now avoids the failed run."],
     },
   },
   tr: {
@@ -429,7 +462,7 @@ const I18N = {
     unreadable: "Okunamayanlar: {x} kota bilgisini dışarı vermiyor.", unreadable1: "Okunamayan: {x} kota bilgisini dışarı vermiyor.",
     no_ccusage: "ccusage kurulu değil (npm i -g ccusage); Claude harcaması boş kalır.",
     show_all: "{n} notun hepsini göster", show_less: "Daha az göster", nothing: "Şu an dikkat edilecek bir şey yok.",
-    tab_spend: "Harcama", tab_sessions: "Oturumlar", tab_runs: "Multica koşuları", tab_agents: "Ajanlar ve anahtarlar",
+    tab_spend: "Harcama", tab_sessions: "Oturumlar", tab_runs: "Multica koşuları", tab_agents: "Ajanlar ve yedekler",
     span_today: "Bugün", span_window: "Bu pencere", span_week: "7 gün", search: "Ara: ajan, iş, başlık, proje…",
     k_multica: "Multica", k_long: "Uzun oturum", k_interactive: "Etkileşimli", k_scheduled: "Zamanlanmış", k_side: "Yan oturum",
     who: "Kim harcadı", heatmap: "Ne zaman yanıyor", heatmap_aside: "Claude $, gün × saat, son 7 gün",
@@ -445,6 +478,15 @@ const I18N = {
     r_all: "Tümü", r_live: "Süren", r_failed_f: "Düşen", r_done_f: "Biten", all_agents: "Bütün ajanlar",
     c_agent: "Ajan · iş", c_model: "Model", c_status: "Durum", c_started: "Başlangıç", c_min: "Dk", c_tokens: "Token",
     no_issue: "işsiz", cancel_run: "İptal", cancel_run_long: "Koşuyu iptal et",
+    fallbacks: "Yedek zincirleri", fb_moves: "Son geçişler", fb_aside: "{n} ajan · şu an {m} ajan yedekte",
+    fb_own: "kendi", fb_now_own: "kendi modelinde", fb_now_on: "{s}'den beri {n}. yedekte", fb_back: "dönüş {t}", fb_back_manual: "sen geri alana kadar",
+    fb_closed: "{t}'e kadar kota dolu", fb_offline: "runtime kapalı", fb_busy: "çalışıyor", fb_switch: "{n}. yedeğe geçir", fb_restore: "Geri al", fb_edit: "Zinciri düzenle",
+    fb_save: "Zinciri kaydet", fb_add_entry: "Ekle", fb_runtime: "Runtime", fb_model: "Model", fb_none: "Henüz yedek zinciri olan ajan yok.",
+    fb_add_chain: "Bir ajana zincir ver", fb_pick_agent: "Ajan seç", fb_no_moves: "Henüz geçiş yok.", fb_readonly: "Zincirler ajan dosyalarında düzenlenir.",
+    cf_fb_switch_t: "{a} {n}. yedeğe geçsin mi?", cf_fb_switch: "{a} → <b>{x}</b>", cf_fb_switch_sub: "Bekçinin kendi komutu yapar (multica agent update). Sen geri alana kadar ya da kendi kotası belliyse kota açılana kadar orada kalır.",
+    cf_fb_restore_t: "{a} kendi modeline dönsün mü?", cf_fb_restore_sub: "Süren koşu kendi modeliyle biter; sonraki koşu ajanın kendi modeliyle başlar.",
+    cf_fb_chain_t: "{a} için yedek zinciri kaydedilsin mi?", cf_fb_chain_sub: "Ajan dosyasındaki fallback satırını yazar ve commit'ler. Multica'ya bir şey gitmez; bekçi bir sonraki turda okur.",
+    restore: "Kendi modeline döndür", move_now: "Şimdi {x}'e geçir",
     agent_models: "Ajan modelleri", switches: "Durdurma anahtarları", a_agent: "Ajan", a_runtime: "Runtime", a_model: "Model", a_thinking: "Düşünme",
     in_model_name: "modelin adında", apply: "Uygula", no_agents_list: "Ajan yok.",
     model_note_file: "Ajanın dosyasını yazar, gönderme komutunu çalıştırır, dosyayı commit'ler.", model_note_mx: "multica agent update çalıştırır.",
@@ -457,7 +499,7 @@ const I18N = {
     nothing_match: "Bu filtreyle bir şey yok.", showing: "{b} satırın {a}'i gösteriliyor; aramayla daralt.",
     updated: "kayıtta · güncellendi {t}", unreachable: "sunucuya ulaşılamıyor; quotaboard çalışıyor mu?",
     all_fresh: "bütün kaynaklar güncel", collecting: "toplanıyor: {x}", not_readable: "{x} okunamadı",
-    src_blocks: "pencere", src_daily: "günlük", src_scan: "oturumlar", src_quotas: "kotalar", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "işler", src_agents: "ajanlar", src_stop_files: "anahtarlar",
+    src_blocks: "pencere", src_daily: "günlük", src_scan: "oturumlar", src_quotas: "kotalar", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "işler", src_agents: "ajanlar", src_stop_files: "anahtarlar", src_fallback: "yedekler",
     other: "Diğer", min_ago: "{n} dk önce", h_ago: "{n} saat önce", d_ago: "{n} gün önce", in_h: "{h} sa {m} dk", in_m: "{m} dk", in_d: "{d} gün {h} sa",
     adv: {
       window_fills: ["Claude penceresi bu hızla {at}'de dolar; sıfırlanma {end}.", "Şimdiye kadar {usd}, saatte {per_hour}; tavan tahmini {cap}. Gerçek değer uygulamada."],
@@ -474,6 +516,8 @@ const I18N = {
       agy_empty_agents: " Bu hesapta bunu kullanan ajanlar: {a}; başka hesabın runtime'ına taşınabilirler.",
       scheduled_spend: ["Zamanlanmış görevler bugün {usd} harcadı.", "Daha seyrek çalıştırmak bunu azaltır."],
       switch_stopped: ["{name} durdurulmuş.", "{description}"],
+      on_fallback: ["{agent} yedeğinde çalışıyor: {target}.", "{since}'den beri; {back}."],
+      pre_switch: ["Claude penceresi {at}'de dolacak ve {agent} çalışıyor. Şimdi {target}'e geçirilsin mi?", "Zincirindeki ilk açık yedek. Bekçi bunu bir koşu kotaya çarpınca zaten yapar; şimdi geçirmek düşen koşuyu önler."],
     },
   },
 };
@@ -520,6 +564,8 @@ async function act(path, body) {
   } catch (e) { toast(t("failed", {e: e.message}), 12000); }
   load();
 }
+function confirmFbSwitch(id, name, n, target) { confirmBox(t("cf_fb_switch_t", {a: name, n}), t("cf_fb_switch", {a: esc(name), x: esc(target)}) + `<span class="sub">${esc(t("cf_fb_switch_sub"))}</span>`, () => act("/api/fallback/switch", {agent_id: id, n})); }
+function confirmRestore(id, name) { confirmBox(t("cf_fb_restore_t", {a: name}), `<span class="sub">${esc(t("cf_fb_restore_sub"))}</span>`, () => act("/api/fallback/restore", {agent_id: id})); }
 const modelNote = () => D?.model_action === "file" ? t("model_note_file") : t("model_note_mx");
 function confirmModel(a, model, thinking) {
   const o = a.model + (a.thinking ? " / " + a.thinking : ""), n = model + (thinking ? " / " + thinking : "");
@@ -772,6 +818,7 @@ function renderNotes(v) {
     if (P.context != null) P.context = tok(P.context);
     for (const k of ["at", "end"]) if (P[k]) P[k] = hm(P[k]);
     if (P.reset) P.reset = dayHm(P.reset);
+    if (rule === "on_fallback") { P.since = P.since ? when(P.since) : "?"; P.back = P.back ? t("fb_back", {t: when(P.back)}) : t("fb_back_manual"); }
     if (P.window) P.window = WIN(P.window);
     if (P.group) P.group = GROUP(P.group);
     if (Array.isArray(P.allowed)) P.allowed = P.allowed.join(", ");
@@ -788,6 +835,8 @@ function renderNotes(v) {
     if (o.action?.type === "model") btn = `<button class="btn" data-o="${i}">${esc(t("switch_to", {m: MNAME(o.action.model) + (ag[o.action.agent]?.provider === "claude" ? " / " + o.action.thinking : "")}))}</button>`;
     if (o.action?.type === "cancel") btn = `<button class="btn danger" data-o="${i}">${esc(t("cancel_run_long"))}</button>`;
     if (o.action?.type === "stop_file") btn = `<button class="btn" data-o="${i}">${esc(t("start_it"))}</button>`;
+    if (o.action?.type === "restore") btn = `<button class="btn" data-o="${i}">${esc(t("restore"))}</button>`;
+    if (o.action?.type === "switch") btn = `<button class="btn" data-o="${i}">${esc(t("move_now", {x: o.action.target}))}</button>`;
     return `<li>${levelIcon(o.level)}<div class="t">${esc(a)}</div><div class="act">${btn}</div><div class="w">${esc(b)}</div></li>`;
   }).join("") : `<li><span></span><div class="muted">${esc(t("nothing"))}</div></li>`;
   $("notes_more").innerHTML = v.advice.length > 6 ? `<button class="link" id="notes_all">${esc(allNotes ? t("show_less") : t("show_all", {n: v.advice.length}))}</button>` : "";
@@ -797,6 +846,8 @@ function renderNotes(v) {
     if (e.type === "model") confirmModel(ag[e.agent], e.model, ag[e.agent].provider === "claude" ? e.thinking : ag[e.agent].thinking);
     if (e.type === "cancel") confirmCancel(e.run, e.label);
     if (e.type === "stop_file") confirmSwitch(e.i, e.stop);
+    if (e.type === "restore") confirmRestore(e.agent_id, e.agent);
+    if (e.type === "switch") confirmFbSwitch(e.agent_id, e.agent, e.n, e.target);
   });
 }
 
@@ -1037,6 +1088,65 @@ function renderAgents(v) {
   $("switches").querySelectorAll("button[data-sw]").forEach(b => b.onclick = () => confirmSwitch(+b.dataset.sw, !v.stop_files[+b.dataset.sw].stopped));
 }
 
+// ---------- fallbacks ----------
+let fbEdit = null;  // {id, chain: [...]} while a chain is being edited
+const stepLabel = e => `${e.runtime} · ${e.model || "?"}`;
+function renderFallbacks(v) {
+  const fb = v.fallback, blk = $("fb_block");
+  blk.style.display = fb ? "" : "none";
+  if (!fb) return;
+  const onNow = fb.rows.filter(r => r.on != null).length;
+  $("fb_aside").textContent = t("fb_aside", {n: fb.rows.length, m: onNow});
+  const step = (e, label, cur) => {
+    const st = e.closed_until ? `<span class="st" style="color:var(--pen-red)">${esc(t("fb_closed", {t: when(e.closed_until)}))}</span>` : !e.online ? `<span class="st muted">${esc(t("fb_offline"))}</span>` : "";
+    return `<span class="fb-step ${cur ? "cur" : ""} ${e.closed_until ? "closed" : ""}"><span class="r">${esc(label)} · ${esc(e.runtime)}</span><span class="m">${esc(e.model)}${e.thinking ? " / " + esc(e.thinking) : ""}</span>${st}</span>`;
+  };
+  const arrow = `<span class="fb-arrow" aria-hidden="true">→</span>`;
+  $("fallbacks").innerHTML = fb.rows.length ? fb.rows.map(r => {
+    const held = r.held || {};
+    const state = r.on == null ? t("fb_now_own") : t("fb_now_on", {n: r.on + 1, s: when(held.since)}) + " · " + (held.back_at ? t("fb_back", {t: when(held.back_at)}) : t("fb_back_manual"));
+    const editing_ = fbEdit && fbEdit.id === r.id;
+    const acts = [
+      ...r.chain.map((e, k) => r.on === k ? "" : `<button class="btn" data-sw="${esc(r.id)}" data-n="${k + 1}" ${e.closed_until || !e.online ? "disabled" : ""}>${esc(t("fb_switch", {n: k + 1}))}</button>`),
+      r.on != null ? `<button class="btn primary" data-rs="${esc(r.id)}">${esc(t("fb_restore"))}</button>` : "",
+      fb.editable && !editing_ ? `<button class="link" data-ed="${esc(r.id)}">${esc(t("fb_edit"))}</button>` : "",
+    ].join("");
+    return `<div class="fb-row"><div class="fb-name"><b>${esc(r.name)}</b><span class="cell-sub">${esc(state)}${r.busy ? " · " + esc(t("fb_busy")) : ""}</span></div>
+      <div class="fb-chain">${step(r.own, t("fb_own"), r.on == null)}${r.chain.map((e, k) => arrow + step(e, "#" + (k + 1), r.on === k)).join("")}</div>
+      <div class="fb-acts">${acts}</div>${editing_ ? `<div style="grid-column:1/-1">${chainEditor(fb)}</div>` : ""}</div>`;
+  }).join("") : `<div class="empty">${esc(t("fb_none"))}</div>`;
+  const root = $("fallbacks");
+  root.querySelectorAll("[data-sw]").forEach(b => b.onclick = () => { const r = fb.rows.find(x => x.id === b.dataset.sw), n = +b.dataset.n; confirmFbSwitch(r.id, r.name, n, stepLabel(r.chain[n - 1])); });
+  root.querySelectorAll("[data-rs]").forEach(b => b.onclick = () => { const r = fb.rows.find(x => x.id === b.dataset.rs); confirmRestore(r.id, r.name); });
+  root.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { const r = fb.rows.find(x => x.id === b.dataset.ed); fbEdit = {id: r.id, name: r.name, chain: r.chain.map(e => ({runtime_id: e.runtime_id, model: e.model, thinking: e.thinking}))}; editing = true; renderFallbacks(v); });
+  wireEditor(fb, v);
+  $("fb_events").innerHTML = fb.events.length ? `<ul class="events">${fb.events.slice().reverse().slice(0, 12).map(e => `<li><time>${esc(when(e.at))}</time><span>${esc(e.text)}</span></li>`).join("")}</ul>` : `<div class="empty">${esc(t("fb_no_moves"))}</div>`;
+  $("fb_add").innerHTML = fb.editable ? (fbEdit && !fb.rows.some(r => r.id === fbEdit.id) ? `<h3>${esc(fbEdit.name)}</h3>${chainEditor(fb)}`
+    : fb.agents_without.length ? `<h3>${esc(t("fb_add_chain"))}</h3><select class="sel" id="fb_new"><option value="">${esc(t("fb_pick_agent"))}</option>${fb.agents_without.map(n => `<option>${esc(n)}</option>`).join("")}</select>` : "")
+    : `<p class="cell-sub">${esc(t("fb_readonly"))}</p>`;
+  if ($("fb_new")) $("fb_new").onchange = e => { const a = v.agents.find(x => x.name === e.target.value); if (a) { fbEdit = {id: a.id, name: a.name, chain: []}; editing = true; renderFallbacks(v); } };
+  if (fbEdit && !fb.rows.some(r => r.id === fbEdit.id)) wireEditor(fb, v);
+}
+function chainEditor(fb) {
+  const rtName = id => fb.runtimes.find(r => r.id === id)?.name || id.slice(0, 8);
+  return `<div class="fb-edit" id="fb_editor">${fbEdit.chain.map((e, k) => `<div class="fb-edit-row"><span class="mono" style="width:22px">#${k + 1}</span><span style="min-width:180px">${esc(rtName(e.runtime_id))}</span><span class="mono">${esc(e.model)}</span>
+      <button class="icon-btn" data-up="${k}" ${k ? "" : "disabled"} aria-label="up"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 2 L9 7 H1 Z" fill="currentColor"/></svg></button>
+      <button class="icon-btn" data-rm="${k}" aria-label="remove"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 2 L8 8 M8 2 L2 8" stroke="currentColor" stroke-width="1.6"/></svg></button></div>`).join("")}
+    <div class="fb-edit-row"><select class="sel" id="fb_rt"><option value="">${esc(t("fb_runtime"))}</option>${fb.runtimes.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.online ? "" : " · " + esc(t("fb_offline"))}</option>`).join("")}</select>
+      <input id="fb_model" list="fb_models" placeholder="${esc(t("fb_model"))}"><datalist id="fb_models"></datalist><button class="btn" id="fb_addbtn">${esc(t("fb_add_entry"))}</button></div>
+    <div class="fb-edit-row" style="margin-top:4px"><button class="btn" id="fb_cancel">${esc(t("cancel"))}</button><button class="btn primary" id="fb_save">${esc(t("fb_save"))}</button></div></div>`;
+}
+function wireEditor(fb, v) {
+  const box = $("fb_editor");
+  if (!box || !fbEdit) return;
+  box.querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const k = +b.dataset.up; [fbEdit.chain[k - 1], fbEdit.chain[k]] = [fbEdit.chain[k], fbEdit.chain[k - 1]]; renderFallbacks(v); });
+  box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { fbEdit.chain.splice(+b.dataset.rm, 1); renderFallbacks(v); });
+  $("fb_rt").onchange = e => { const r = fb.runtimes.find(x => x.id === e.target.value); $("fb_models").innerHTML = (r?.models || []).map(m => `<option value="${esc(m)}">`).join(""); };
+  $("fb_addbtn").onclick = () => { const rid = $("fb_rt").value, m = $("fb_model").value.trim(); if (rid && m) { fbEdit.chain.push({runtime_id: rid, model: m, thinking: ""}); renderFallbacks(v); } };
+  $("fb_cancel").onclick = () => { fbEdit = null; editing = false; renderFallbacks(v); };
+  $("fb_save").onclick = () => { const e = fbEdit; confirmBox(t("cf_fb_chain_t", {a: e.name}), `<span class="sub">${esc(t("cf_fb_chain_sub"))}</span>`, async () => { fbEdit = null; editing = false; await act("/api/fallback/chain", {agent_id: e.id, chain: e.chain}); }); };
+}
+
 // ---------- chrome ----------
 function renderChrome(v) {
   document.documentElement.lang = LANG;
@@ -1045,7 +1155,7 @@ function renderChrome(v) {
   $("rec_note").textContent = t("rec_note");
   if (!v) return;
   $("updated").textContent = t("updated", {t: hm(v.now)});
-  const N = ["blocks", "daily", "scan", "quotas", "antigravity", "multica", "issues", "agents", "stop_files"].filter(k => k in v.sources || ["blocks", "daily", "scan", "quotas"].includes(k));
+  const N = ["blocks", "daily", "scan", "quotas", "antigravity", "multica", "issues", "agents", "fallback", "stop_files"].filter(k => k in v.sources || ["blocks", "daily", "scan", "quotas"].includes(k));
   const bad = N.filter(k => v.sources[k] && !v.sources[k].ok), wait = N.filter(k => !v.sources[k]);
   const h = $("health");
   h.className = "health" + (bad.length ? " bad" : "");
@@ -1055,7 +1165,7 @@ function renderChrome(v) {
 document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { LANG = b.dataset.lang; try { localStorage.setItem("quotaboard-lang", LANG); } catch (e) {} renderAll(); });
 
 function safe(f) { try { f(D); } catch (e) { console.error(f.name, e); } }
-function draw() { if (!D) return; renderControls(D); for (const f of [renderSpend, renderSessions, renderRuns]) safe(f); if (!editing) safe(renderAgents); }
+function draw() { if (!D) return; renderControls(D); for (const f of [renderSpend, renderSessions, renderRuns]) safe(f); if (!editing) { safe(renderAgents); safe(renderFallbacks); } }
 function renderAll() { renderChrome(D); if (!D) return; for (const f of [drawRecorder, renderNotes, renderFacts]) safe(f); draw(); }
 async function load() {
   try { D = await (await fetch("/api/data", {cache: "no-store"})).json(); }
