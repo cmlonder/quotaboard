@@ -153,3 +153,7 @@ bin/quotaboard        launcher
 install.sh            puts the launcher on PATH
 config.example.json   every config key with an example
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
