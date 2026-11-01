@@ -1,0 +1,33 @@
+{
+  "port": 9998,
+  "window_cap_usd": null,
+
+  "antigravity": [
+    {"name": "work", "command": "agy", "note": "default sign-in", "runtimes": ["Antigravity"]},
+    {"name": "personal", "command": "~/.local/bin/agy-personal", "note": "second account", "runtimes": ["Antigravity (personal)"]}
+  ],
+
+  "codex": true,
+  "openrouter": true,
+
+  "multica": {
+    "command": ["multica", "--profile", "<profile>", "--workspace-id", "<workspace id>"],
+    "days": 7,
+    "agent_files": null,
+    "push_command": null,
+    "commit": true
+  },
+
+  "stop_files": [
+    {"name": "Watchdog", "path": "~/.my-watchdog/STOP", "log": "~/.my-watchdog/watchdog.log",
+     "description": "Restarts stuck agent runs every 5 minutes."}
+  ],
+
+  "rules": {
+    "expensive_models": ["fable"],
+    "opus_allowed_agents": [],
+    "session_share": 0.3,
+    "context_warning": 400000,
+    "long_run_minutes": 60
+  }
+}

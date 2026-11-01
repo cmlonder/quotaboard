@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Start quotaboard on 127.0.0.1 and open it in the browser; Ctrl-C stops it.
+#   quotaboard [--no-open] [--port N] [--config PATH]
+set -e
+HERE="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0")")/.." && pwd)"
+PORT="${QUOTABOARD_PORT:-9998}"
+OPEN=1
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-open) OPEN=0 ;;
+    --port) PORT="$2"; shift ;;
+    *) ARGS+=("$1") ;;
+  esac
+  shift
+done
+URL="http://127.0.0.1:$PORT"
+open_url() {
+  [[ $OPEN == 1 ]] || return 0
+  if command -v open >/dev/null; then open "$URL"; elif command -v xdg-open >/dev/null; then xdg-open "$URL" >/dev/null 2>&1; fi
+}
+if curl -s -o /dev/null -m 2 "$URL/"; then
+  echo "quotaboard is already running: $URL (stop it with Ctrl-C where it runs)"
+  open_url
+  exit 0
+fi
+( sleep 2; open_url ) &
+exec python3 "$HERE/quotaboard.py" --port "$PORT" "${ARGS[@]}"
