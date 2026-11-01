@@ -3,487 +3,1069 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>quotaboard</title>
 <style>
+/* World: a strip-chart recorder's paper. Engineering grid, black ink for what happened, dashed ink for what will,
+   red pen for limits. Readouts are measurement, so they are set in mono; everything else is a plain sans. */
 :root {
-  --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e4e2da; --soft: #efede6;
-  --red: #c2412d; --amber: #b7791f; --green: #2f7d4f; --blue: #2b5fa8;
-  --m-opus: #6f4cc3; --m-fable: #d0562b; --m-sonnet: #2b7fa8; --m-haiku: #4a9b6e; --m-other: #9a9890;
-  --k-long: #d0562b; --k-multica: #2b5fa8; --k-scheduled: #b7791f; --k-side: #7a6fb0; --k-interactive: #4a9b6e;
+  --paper: #f6f4ec; --paper-2: #efece2; --sheet: #fbfaf5;
+  --grid-1: rgba(48, 104, 92, .075); --grid-2: rgba(48, 104, 92, .15);
+  --ink: #1b1c1a; --ink-2: #45473f; --ink-3: #66675f; --rule: #d9d5c7; --rule-2: #c9c4b3;
+  --pen-red: #c2382c; --pen-blue: #23559c; --amber: #a86a00; --green: #2c7148;
+  --wash-red: rgba(194, 56, 44, .08); --wash-blue: rgba(35, 85, 156, .08); --band: rgba(27, 28, 26, .035);
+  --k-multica: #2a78d6; --k-long: #eb6834; --k-interactive: #1baf7a; --k-scheduled: #eda100; --k-side: #e87ba4;
+  --m-sonnet: #2a78d6; --m-opus: #6250d6; --m-fable: #e34948; --m-haiku: #1baf7a; --m-other: #8d8b80;
+  --t-input: #2a78d6; --t-output: #eb6834; --t-write: #1baf7a; --t-read: #eda100;
+  --heat-0: #eef1f6; --heat-1: #cfdcf0; --heat-2: #9fbde6; --heat-3: #5f95d8; --heat-4: #2a6bc4; --heat-5: #1a4a8f;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161614; --panel: #1f1f1c; --ink: #ecebe6; --muted: #9c9a92; --line: #33322e; --soft: #2a2a27;
-    --red: #e46b55; --amber: #d9a443; --green: #5cb47f; --blue: #6b9be0;
-    --m-opus: #9b7fe6; --m-fable: #ec7a50; --m-sonnet: #57a9d1; --m-haiku: #6cc08f; --m-other: #77756d;
-    --k-long: #ec7a50; --k-multica: #6b9be0; --k-scheduled: #d9a443; --k-side: #a197d6; --k-interactive: #6cc08f;
+  :root:where(:not([data-theme="light"])) {
+    --paper: #121412; --paper-2: #181a17; --sheet: #161815;
+    --grid-1: rgba(150, 205, 185, .045); --grid-2: rgba(150, 205, 185, .09);
+    --ink: #ebeae3; --ink-2: #c4c3b9; --ink-3: #9d9c92; --rule: #2c2f2a; --rule-2: #3a3d37;
+    --pen-red: #ef6b5d; --pen-blue: #79a7ec; --amber: #e0a73c; --green: #63b98a;
+    --wash-red: rgba(239, 107, 93, .1); --wash-blue: rgba(121, 167, 236, .1); --band: rgba(235, 234, 227, .035);
+    --k-multica: #3987e5; --k-long: #d95926; --k-interactive: #199e70; --k-scheduled: #c98500; --k-side: #d55181;
+    --m-sonnet: #3987e5; --m-opus: #9085e9; --m-fable: #e66767; --m-haiku: #199e70; --m-other: #77756d;
+    --t-input: #3987e5; --t-output: #d95926; --t-write: #199e70; --t-read: #c98500;
+    --heat-0: #1b2029; --heat-1: #1f3250; --heat-2: #24497a; --heat-3: #2f64a8; --heat-4: #4a86d4; --heat-5: #8db6ef;
+    color-scheme: dark;
   }
 }
+:root[data-theme="dark"] {
+  --paper: #121412; --paper-2: #181a17; --sheet: #161815;
+  --grid-1: rgba(150, 205, 185, .045); --grid-2: rgba(150, 205, 185, .09);
+  --ink: #ebeae3; --ink-2: #c4c3b9; --ink-3: #9d9c92; --rule: #2c2f2a; --rule-2: #3a3d37;
+  --pen-red: #ef6b5d; --pen-blue: #79a7ec; --amber: #e0a73c; --green: #63b98a;
+  --wash-red: rgba(239, 107, 93, .1); --wash-blue: rgba(121, 167, 236, .1); --band: rgba(235, 234, 227, .035);
+  --k-multica: #3987e5; --k-long: #d95926; --k-interactive: #199e70; --k-scheduled: #c98500; --k-side: #d55181;
+  --m-sonnet: #3987e5; --m-opus: #9085e9; --m-fable: #e66767; --m-haiku: #199e70; --m-other: #77756d;
+  --t-input: #3987e5; --t-output: #d95926; --t-write: #199e70; --t-read: #c98500;
+  --heat-0: #1b2029; --heat-1: #1f3250; --heat-2: #24497a; --heat-3: #2f64a8; --heat-4: #4a86d4; --heat-5: #8db6ef;
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 12px; }
-h1 { font-size: 21px; margin: 0; letter-spacing: -0.01em; }
-h2 { font-size: 15px; margin: 0 0 10px; }
-h3 { font-size: 12.5px; margin: 16px 0 6px; color: var(--muted); font-weight: 600; }
-.muted { color: var(--muted); } .small { font-size: 12px; } .num { font-variant-numeric: tabular-nums; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
-section { margin-top: 14px; }
-.grid { display: grid; gap: 12px; }
-.quotas { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
-.g2 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
-@media (max-width: 520px) { .g2 { grid-template-columns: 1fr; } }
-.quota h2 { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
-.quota .sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.limit { margin-top: 9px; }
-.limit .top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
-.limit .top b { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.limit .reset { font-size: 11.5px; color: var(--muted); }
-.bar { position: relative; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; margin-top: 4px; }
-.bar > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
-.stack { display: flex; height: 12px; border-radius: 4px; overflow: hidden; background: var(--soft); }
-.stack span { height: 100%; }
-.legend { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-top: 6px; font-size: 12px; color: var(--muted); }
-.dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-.note { background: var(--soft); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+html { background: var(--paper); }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; caret-color: var(--pen-blue); }
+::selection { background: var(--wash-blue); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--pen-blue); outline-offset: 2px; border-radius: 3px; }
+* { scrollbar-width: thin; scrollbar-color: var(--rule-2) transparent; }
+a { color: var(--pen-blue); text-underline-offset: 3px; }
+.num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+.small { font-size: 12px; }
+button, select, input { font: inherit; color: inherit; }
+
+/* top strip */
+.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.top-in { max-width: 1320px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 18px; }
+.mark { display: flex; align-items: center; gap: 9px; font-weight: 650; letter-spacing: -0.01em; font-size: 15px; }
+.mark svg { display: block; }
+.rec { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-3); }
+.rec i { width: 7px; height: 7px; border-radius: 50%; background: var(--pen-red); }
+.top .spacer { flex: 1; }
+.health { font-size: 12px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.health.bad { color: var(--pen-red); }
+.lang { display: inline-flex; border: 1px solid var(--rule-2); border-radius: 6px; overflow: hidden; }
+.lang button { border: 0; background: none; padding: 3px 9px; font-size: 12px; font-family: var(--mono); color: var(--ink-3); cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+main { max-width: 1320px; margin: 0 auto; padding: 22px 20px 80px; }
+h2 { font-size: 13px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; margin: 0; color: var(--ink); }
+h3 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--ink); }
+.section-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 10px; }
+.section-head .note { font-size: 12.5px; color: var(--ink-3); }
+
+/* the recorder: the page's one sheet of chart paper */
+.sheet { position: relative; background-color: var(--sheet); border: 1px solid var(--rule-2); border-radius: 4px;
+  background-image: linear-gradient(var(--grid-2) 1px, transparent 1px), linear-gradient(90deg, var(--grid-2) 1px, transparent 1px),
+    linear-gradient(var(--grid-1) 1px, transparent 1px), linear-gradient(90deg, var(--grid-1) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px; background-position: -1px -1px; }
+#recorder { display: block; width: 100%; user-select: none; }
+#recorder text { font-family: var(--sans); fill: var(--ink-2); }
+#recorder .mono { font-family: var(--mono); }
+.rec-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 14px 10px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-3); background: var(--sheet); border-radius: 0 0 4px 4px; }
+.rec-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.key-line { width: 18px; height: 0; border-top: 2px solid var(--ink); display: inline-block; }
+.key-dash { border-top-style: dashed; }
+.key-red { border-top-color: var(--pen-red); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); border-radius: 6px; padding: 8px 10px; font-size: 12px; line-height: 1.45; min-width: 170px; box-shadow: 0 6px 20px -6px rgba(0,0,0,.35); opacity: 0; transition: opacity .12s; z-index: 4; }
+.tip.on { opacity: 1; }
+.tip b { font-family: var(--mono); font-weight: 600; }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .row span:first-child { opacity: .75; }
+
+/* claude percentages entry */
+.app-entry { position: absolute; z-index: 5; background: var(--sheet); border: 0; border-radius: 8px; padding: 12px 14px; width: 300px; box-shadow: 0 12px 32px -12px rgba(0,0,0,.3); display: none; }
+.app-entry.on { display: block; }
+.app-entry label { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; margin: 6px 0; }
+.app-entry input { width: 74px; text-align: right; font-family: var(--mono); border: 1px solid var(--rule-2); border-radius: 5px; padding: 4px 6px; background: var(--paper); }
+.app-entry p { font-size: 12px; color: var(--ink-3); margin: 8px 0 10px; }
+
+/* notes + summary */
+.below { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px; margin-top: 26px; }
+@media (max-width: 980px) { .below { grid-template-columns: 1fr; } }
+.notes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.notes li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 4px 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); align-items: start; }
+.notes .lv { margin-top: 3px; }
+.notes .t { font-weight: 550; }
+.notes .w { grid-column: 2; font-size: 12.5px; color: var(--ink-3); }
+.notes .act { grid-row: 1 / span 2; grid-column: 3; align-self: center; }
+.more { margin-top: 8px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--rule); }
+.fact { padding: 12px 0 12px; border-bottom: 1px solid var(--rule); }
+.fact:nth-child(odd) { padding-right: 16px; border-right: 1px solid var(--rule); }
+.fact:nth-child(even) { padding-left: 16px; }
+.fact .v { font-family: var(--mono); font-size: 24px; letter-spacing: -0.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.fact .l { font-size: 12px; color: var(--ink-3); }
+.fact .d { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+
+/* buttons */
+.btn { border: 1px solid var(--rule-2); background: var(--sheet); border-radius: 6px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s; }
+.btn:hover { border-color: var(--ink-3); }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.btn.danger { color: var(--pen-red); border-color: color-mix(in srgb, var(--pen-red) 55%, transparent); }
+.btn.danger:hover { background: var(--wash-red); }
+.btn:disabled { opacity: .4; cursor: default; }
+.link { border: 0; background: none; padding: 0; color: var(--pen-blue); cursor: pointer; font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* analysis */
+.analysis { margin-top: 40px; }
+.bar-controls { position: sticky; top: 47px; z-index: 6; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.tabs { display: flex; gap: 2px; }
+.tabs button { border: 0; background: none; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--ink-3); border-radius: 6px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--rule-2); }
+.seg { display: inline-flex; border: 1px solid var(--rule-2); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 4px 11px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--rule-2); background: none; border-radius: 20px; padding: 2px 10px 2px 8px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.chip[aria-pressed="false"] { opacity: .45; }
+.chip[aria-pressed="false"] .sw { background: transparent !important; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex: none; }
+.search { flex: 1; min-width: 200px; border: 1px solid var(--rule-2); background: var(--sheet); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
+.search::placeholder { color: var(--ink-3); }
+.panel { display: none; padding-top: 22px; }
+.panel.on { display: block; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px 40px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 40px; }
+@media (max-width: 980px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.block { min-width: 0; }
+.block + .block { }
+.block-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--ink); padding-bottom: 6px; margin-bottom: 12px; }
+.block-head h3 { margin: 0; }
+.block-head .aside { font-size: 12px; color: var(--ink-3); }
+.insight { font-size: 13px; color: var(--ink-2); margin: 10px 0 0; max-width: 62ch; }
+.insight b { color: var(--ink); font-weight: 600; }
+
+/* ranked bar lists */
+.ranks { display: grid; gap: 7px; }
+.rank { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 3px 12px; align-items: center; }
+.rank .name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank .name small { color: var(--ink-3); margin-left: 6px; }
+.rank .val { text-align: right; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.rank .track { grid-column: 1 / -1; height: 6px; background: var(--paper-2); border-radius: 3px; overflow: hidden; display: flex; gap: 2px; }
+.rank .track span { height: 100%; border-radius: 0 3px 3px 0; }
+.stackbar { display: flex; height: 14px; gap: 2px; border-radius: 3px; overflow: hidden; }
+.stackbar span { height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+
+svg.chart { display: block; width: 100%; overflow: visible; }
+svg.chart text { font-family: var(--sans); font-size: 11px; fill: var(--ink-3); }
+svg.chart .axis { stroke: var(--rule-2); stroke-width: 1; }
+svg.chart .gl { stroke: var(--rule); stroke-width: 1; }
+.chart-wrap { position: relative; }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 5px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th[data-s] { cursor: pointer; user-select: none; } th[data-s]:hover { color: var(--ink); }
-td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-td.r, th.r { text-align: right; } td.r { font-variant-numeric: tabular-nums; white-space: nowrap; }
-tr:last-child td { border-bottom: 0; }
-.scroll { overflow-x: auto; }
-.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11.5px; background: var(--soft); color: var(--muted); white-space: nowrap; }
-.adv { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
-.adv:last-child { border-bottom: 0; }
-.lvl { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
-.lvl.high { background: var(--red); } .lvl.medium { background: var(--amber); } .lvl.low { background: var(--muted); }
-.adv .why { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
-button { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; white-space: nowrap; }
-button:hover { border-color: var(--muted); }
-button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-button.danger { color: var(--red); border-color: var(--red); }
-button.link { border: 0; padding: 0; background: none; color: var(--blue); }
-button:disabled { opacity: .45; cursor: default; }
-select, input { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); max-width: 100%; }
-input[type=number] { width: 70px; }
-.filters { position: sticky; top: 0; z-index: 3; background: var(--bg); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; border-bottom: 1px solid var(--line); }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
-.seg button { border: 0; border-radius: 0; padding: 5px 12px; }
-.seg button.on { background: var(--ink); color: var(--panel); }
-.chip { border-radius: 14px; padding: 3px 10px; font-size: 12.5px; }
-.chip.off { opacity: .45; text-decoration: line-through; }
-.tabs { display: flex; gap: 2px; margin-top: 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
-.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; color: var(--muted); font-weight: 600; }
-.tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
-.tab { display: none; } .tab.on { display: block; }
-.chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding-top: 8px; }
-.chart .col { flex: 1; display: flex; flex-direction: column-reverse; min-width: 6px; }
-.chart .col:hover { outline: 1px solid var(--muted); }
-.xl { display: flex; gap: 3px; font-size: 10.5px; color: var(--muted); margin-top: 3px; }
-.xl span { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; }
-.trunc { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sum { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-bottom: 10px; }
-.sum div b { font-size: 20px; display: block; font-variant-numeric: tabular-nums; }
-.sum div span { font-size: 12px; color: var(--muted); }
-dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); max-width: 520px; width: calc(100% - 32px); padding: 18px 20px; }
-dialog::backdrop { background: rgba(0,0,0,.35); }
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 10px 16px; border-radius: 8px; max-width: min(640px, calc(100% - 32px)); font-size: 13px; display: none; z-index: 5; white-space: pre-wrap; }
-pre { white-space: pre-wrap; font-size: 11.5px; color: var(--muted); margin: 6px 0 0; max-height: 160px; overflow: auto; }
-.empty { color: var(--muted); padding: 12px 0; }
+th { text-align: left; font-weight: 600; font-size: 11.5px; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-3); padding: 7px 8px; border-bottom: 1px solid var(--ink); white-space: nowrap; }
+th[data-s] { cursor: pointer; } th[data-s]:hover { color: var(--ink); }
+th.r, td.r { text-align: right; }
+td { padding: 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.r { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:hover td { background: var(--band); }
+.cell-title { max-width: 440px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-sub { font-size: 12px; color: var(--ink-3); }
+.inline-bar { height: 4px; background: var(--paper-2); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.inline-bar span { display: block; height: 100%; background: var(--ink-2); border-radius: 2px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.status-failed { color: var(--pen-red); }
+.status-running { color: var(--pen-blue); }
+.table-foot { font-size: 12px; color: var(--ink-3); margin-top: 8px; }
+.empty { color: var(--ink-3); padding: 18px 0; font-size: 13px; }
+select.sel { border: 1px solid var(--rule-2); background: var(--sheet); border-radius: 6px; padding: 4px 6px; font-size: 12.5px; max-width: 220px; }
+
+.counts { display: flex; flex-wrap: wrap; gap: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 24px; }
+.counts > div { padding: 10px 22px 10px 0; margin-right: 22px; border-right: 1px solid var(--rule); }
+.counts > div:last-child { border-right: 0; }
+.counts .v { font-family: var(--mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.counts .l { font-size: 12px; color: var(--ink-3); }
+
+pre.log { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); white-space: pre-wrap; margin: 8px 0 0; max-height: 180px; overflow: auto; border-left: 1px solid var(--rule-2); padding-left: 10px; }
+.switch { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.switch-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+dialog { border: 0; border-radius: 10px; background: var(--sheet); color: var(--ink); max-width: 500px; width: calc(100% - 32px); padding: 20px 22px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.4); }
+dialog::backdrop { background: rgba(10, 12, 10, .35); }
+dialog h3 { font-size: 16px; margin-bottom: 8px; }
+.dlg-text { font-size: 13.5px; margin-bottom: 18px; }
+.dlg-text .sub { display: block; margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; max-width: min(620px, calc(100% - 32px)); font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s cubic-bezier(.2,.8,.2,1); z-index: 20; white-space: pre-wrap; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 720px) {
+  .top-in, main { padding-left: 16px; padding-right: 16px; }
+  .health .htext, .rec span { display: none; }
+  .top-in { gap: 12px; }
+  .facts { grid-template-columns: 1fr; }
+  .fact:nth-child(odd) { border-right: 0; padding-right: 0; }
+  .fact:nth-child(even) { padding-left: 0; }
+  .bar-controls { position: static; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>quotaboard</h1>
-    <span class="muted small" id="updated">loading…</span>
-    <span id="sources"></span>
-  </header>
-
-  <h2 style="margin-top:4px">Quotas <span class="muted small" style="font-weight:400">— what is left; a fuller bar means more quota</span></h2>
-  <div class="grid quotas" id="quotas"></div>
-  <div class="note" id="unreadable"></div>
-
-  <section class="card">
-    <h2>Advice</h2>
-    <div id="advice"></div>
-  </section>
-
-  <div class="tabs" id="tabs">
-    <button data-t="spend" class="on">Spending</button>
-    <button data-t="sessions">Sessions</button>
-    <button data-t="runs" data-multica>Multica runs</button>
-    <button data-t="agents" data-multica>Agents &amp; switches</button>
-  </div>
-  <div class="filters">
-    <div class="seg" id="span">
-      <button data-v="today" class="on">Today</button><button data-v="window">This window</button><button data-v="week">7 days</button>
+<header class="top">
+  <div class="top-in">
+    <div class="mark">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 15 L8 12 L11 13.5 L14 8 L18 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 5.5 H18" stroke="var(--pen-red)" stroke-width="1.4" stroke-dasharray="2 2"/></svg>
+      quotaboard
     </div>
-    <div id="kinds" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-    <input id="search" type="search" placeholder="Search: agent, issue, title…" style="flex:1;min-width:180px">
+    <span class="rec"><i></i><span id="updated">…</span></span>
+    <span class="spacer"></span>
+    <span class="health" id="health"></span>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="en" aria-pressed="true">EN</button><button data-lang="tr" aria-pressed="false">TR</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="section-head"><h2 data-i="recorder"></h2><span class="note" id="rec_note"></span></div>
+  <div class="sheet" id="sheet">
+    <svg id="recorder" role="img"></svg>
+    <div class="tip" id="rec_tip"></div>
+    <div class="app-entry" id="app_entry"></div>
+    <div class="rec-legend" id="rec_legend"></div>
   </div>
 
-  <div class="tab on" id="t-spend">
-    <section class="grid g2">
-      <div class="card"><h2>Who spent it</h2><div id="who"></div></div>
-      <div class="card"><h2>Models</h2><div id="models"></div></div>
+  <div class="below">
+    <section>
+      <div class="section-head"><h2 data-i="notes"></h2><span class="note" id="notes_note"></span></div>
+      <ul class="notes" id="notes"></ul>
+      <div class="more" id="notes_more"></div>
     </section>
-    <section class="grid g2" data-multica>
-      <div class="card"><h2>Multica agents</h2><div class="scroll" id="by_agent"></div></div>
-      <div class="card"><h2>Multica issues</h2><div class="scroll" id="by_issue"></div></div>
-    </section>
-    <section class="grid g2">
-      <div class="card"><h2>Daily <span class="muted small">(Claude, last 21 days)</span></h2><div id="daily"></div></div>
-      <div class="card"><h2>5-hour windows <span class="muted small">(last 3 days)</span></h2><div id="windows"></div><h3>Weekly (Claude)</h3><div id="weekly"></div></div>
+    <section>
+      <div class="section-head"><h2 data-i="today"></h2><span class="note" id="today_note"></span></div>
+      <div class="facts" id="facts"></div>
+      <div id="unreadable" class="insight small muted"></div>
     </section>
   </div>
 
-  <div class="tab" id="t-sessions"><section class="card"><div class="scroll" id="sessions"></div></section></div>
-
-  <div class="tab" id="t-runs">
-    <section class="card">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <div class="seg" id="rstatus"><button data-v="" class="on">All</button><button data-v="live">Running</button><button data-v="failed">Failed</button><button data-v="completed">Done</button></div>
-        <select id="ragent"><option value="">All agents</option></select>
+  <section class="analysis">
+    <div class="section-head"><h2 data-i="analysis"></h2></div>
+    <div class="bar-controls">
+      <div class="tabs" role="tablist" id="tabs">
+        <button role="tab" data-t="spend" data-i="tab_spend"></button>
+        <button role="tab" data-t="sessions" data-i="tab_sessions"></button>
+        <button role="tab" data-t="runs" data-i="tab_runs" data-multica></button>
+        <button role="tab" data-t="agents" data-i="tab_agents" data-multica></button>
       </div>
-      <div class="scroll" id="runs"></div>
-    </section>
-  </div>
+      <div class="seg" id="span" role="group"></div>
+      <div class="chips" id="kinds"></div>
+      <input class="search" id="search" type="search">
+    </div>
 
-  <div class="tab" id="t-agents">
-    <section class="grid g2">
-      <div class="card">
-        <h2>Agent models</h2>
-        <p class="muted small" style="margin-top:0" id="model_note"></p>
-        <div class="scroll" id="agents"></div>
+    <div class="panel" id="p-spend">
+      <div class="grid2">
+        <div class="block"><div class="block-head"><h3 data-i="who"></h3><span class="aside" id="who_aside"></span></div><div id="who"></div></div>
+        <div class="block"><div class="block-head"><h3 data-i="heatmap"></h3><span class="aside" data-i="heatmap_aside"></span></div><div class="chart-wrap" id="heat"></div></div>
       </div>
-      <div class="card"><h2>Stop switches</h2><div id="switches"></div></div>
-    </section>
-  </div>
+      <div class="grid2" style="margin-top:38px">
+        <div class="block"><div class="block-head"><h3 data-i="by_day"></h3><span class="aside" data-i="by_day_aside"></span></div><div class="chart-wrap" id="by_day"></div></div>
+        <div class="block"><div class="block-head"><h3 data-i="models_daily"></h3><span class="aside" data-i="models_daily_aside"></span></div><div class="chart-wrap" id="models_daily"></div></div>
+      </div>
+      <div class="grid2" style="margin-top:38px">
+        <div class="block"><div class="block-head"><h3 data-i="anatomy"></h3><span class="aside" id="anatomy_aside"></span></div><div id="anatomy"></div></div>
+        <div class="block"><div class="block-head"><h3 data-i="windows"></h3><span class="aside" data-i="windows_aside"></span></div><div class="chart-wrap" id="windows"></div></div>
+      </div>
+      <div class="grid3" style="margin-top:38px">
+        <div class="block"><div class="block-head"><h3 data-i="projects"></h3><span class="aside" id="projects_aside"></span></div><div id="projects"></div></div>
+        <div class="block" data-multica><div class="block-head"><h3 data-i="agents_spend"></h3><span class="aside" id="agents_aside"></span></div><div id="agents_spend"></div></div>
+        <div class="block" data-multica><div class="block-head"><h3 data-i="issues"></h3><span class="aside" id="issues_aside"></span></div><div id="issues"></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="p-sessions"><div class="table-wrap" id="sessions"></div></div>
+
+    <div class="panel" id="p-runs">
+      <div class="counts" id="run_counts"></div>
+      <div class="grid2">
+        <div class="block"><div class="block-head"><h3 data-i="runs_by_agent"></h3><span class="aside" data-i="runs_by_agent_aside"></span></div><div id="runs_by_agent"></div></div>
+        <div class="block"><div class="block-head"><h3 data-i="fail_reasons"></h3><span class="aside" id="fail_aside"></span></div><div id="fail_reasons"></div></div>
+      </div>
+      <div style="margin-top:34px">
+        <div class="block-head"><h3 data-i="run_list"></h3><span class="aside" style="display:flex;gap:8px;align-items:center"><span class="seg" id="rstatus"></span><select class="sel" id="ragent"></select></span></div>
+        <div class="table-wrap" id="runs"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="p-agents">
+      <div class="grid2">
+        <div class="block"><div class="block-head"><h3 data-i="agent_models"></h3><span class="aside" id="model_note"></span></div><div class="table-wrap" id="agents"></div></div>
+        <div class="block"><div class="block-head"><h3 data-i="switches"></h3></div><div id="switches"></div></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <dialog id="confirm">
-  <h2 id="confirm_title">Confirm</h2>
-  <div id="confirm_text" style="margin-bottom:14px"></div>
-  <div style="display:flex; gap:8px; justify-content:flex-end">
-    <button id="confirm_no">Cancel</button>
-    <button class="primary" id="confirm_yes">Confirm</button>
-  </div>
+  <h3 id="confirm_title"></h3>
+  <div class="dlg-text" id="confirm_text"></div>
+  <div class="dlg-actions"><button class="btn" id="confirm_no"></button><button class="btn primary" id="confirm_yes"></button></div>
 </dialog>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 const TOKEN = "__TOKEN__";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const usd = x => x == null ? "–" : "$" + (x >= 100 ? Math.round(x).toLocaleString() : Number(x).toFixed(2));
-const tok = x => x == null ? "–" : x >= 1e9 ? (x/1e9).toFixed(1) + "B" : x >= 1e6 ? (x/1e6).toFixed(1) + "M" : x >= 1e3 ? Math.round(x/1e3) + "k" : String(x);
-const hm = s => s ? new Date(s).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "–";
-const dayHm = s => s ? new Date(s).toLocaleString([], {weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "–";
-const ago = s => { if (!s) return ""; const m = Math.round((Date.now() - new Date(s)) / 60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
-const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
-const MVAR = m => m.includes("opus") ? "--m-opus" : m.includes("fable") ? "--m-fable" : m.includes("sonnet") ? "--m-sonnet" : m.includes("haiku") ? "--m-haiku" : "--m-other";
-const MNAME = m => (m || "").replace("claude-", "").replace(/-(\d)-(\d)$/, " $1.$2");
-const KIND = {long: "Long-running", multica: "Multica", scheduled: "Scheduled", interactive: "Interactive", side: "Side session"};
-const KVAR = {long: "--k-long", multica: "--k-multica", scheduled: "--k-scheduled", side: "--k-side", interactive: "--k-interactive"};
-const SPAN = {today: "today", window: "this window", week: "7 days"};
+const NS = "http://www.w3.org/2000/svg";
 
-const F = {span: "today", kinds: Object.keys(KIND), search: "", tab: "spend", rstatus: "", ragent: "", sort: {}};
+// ---------- language ----------
+const I18N = {
+  en: {
+    recorder: "Recorder", notes: "Notes", today: "Today", analysis: "Analysis",
+    rec_note: "Every quota on one time axis. Ink is what happened, dashes are the pace ahead, red is a limit.",
+    rec_now: "now", lg_ink: "used / left", lg_pace: "at this pace", lg_cap: "limit (Claude: estimated)", lg_reset: "reset",
+    left: "left", used: "used", resets: "resets", resets_in: "resets in {d}", no_reset: "no reset time", empty_at: "empty ~{t}",
+    fills_at: "fills {t}", fills_before: "fills at {t}, before the {e} reset", safe_until: "holds until the {e} reset",
+    est: "estimate", cap: "cap", per_hour: "{v}/h", no_window: "no open window", from_app: "from the app", entered: "entered {a}",
+    set_app: "Enter app %", app_title: "Claude app percentages", app_help: "Type the “used” numbers from the Claude app's usage settings. Kept only on this computer.",
+    app_5h: "5-hour used %", app_week: "Weekly used %", app_model: "Model weekly used %", save: "Save", cancel: "Cancel", close: "Close",
+    status_ok: "ok", status_low: "low", status_empty: "empty", status_off: "off",
+    week_short: "wk", h5_short: "5h", monthly: "monthly", weekly: "weekly", h5: "5-hour",
+    free_requests: "free requests/day", credit: "credit", no_credit: "no credit", paid: "paid", free_tier: "free tier",
+    agents_on: "agents: {a}", no_agents: "no agents",
+    f_today: "Claude today", f_today_d: "{p} vs. the 7-day average of {a}", f_window: "This window", f_window_d: "since {s} · {r}",
+    f_week: "This week", f_week_d: "last week {v}", f_cache: "Paid for cache reads", f_cache_d: "{p} of today's tokens, {c} of the cost",
+    above: "{p}% above", below: "{p}% below",
+    unreadable: "Not readable: {x} do not expose quota.", unreadable1: "Not readable: {x} does not expose quota.",
+    no_ccusage: "ccusage is not installed (npm i -g ccusage), so Claude spending stays empty.",
+    show_all: "Show all {n}", show_less: "Show fewer", nothing: "Nothing to flag right now.",
+    tab_spend: "Spending", tab_sessions: "Sessions", tab_runs: "Multica runs", tab_agents: "Agents & switches",
+    span_today: "Today", span_window: "This window", span_week: "7 days", search: "Search agent, issue, title, project…",
+    k_multica: "Multica", k_long: "Long-running", k_interactive: "Interactive", k_scheduled: "Scheduled", k_side: "Side session",
+    who: "Who spent it", heatmap: "When it burns", heatmap_aside: "Claude $, hour by day, last 7 days",
+    by_day: "By day and kind", by_day_aside: "Claude $, last 7 days", models_daily: "Models by day", models_daily_aside: "Claude $, last 21 days",
+    anatomy: "What the tokens cost", windows: "5-hour windows", windows_aside: "last 3 days, against the cap",
+    projects: "Projects", agents_spend: "Multica agents", issues: "Multica issues",
+    tokens: "tokens", cost: "cost", t_input: "input", t_output: "output", t_write: "cache write", t_read: "cache read",
+    anatomy_insight: "<b>Cache reads are {rt} of the tokens but {rc} of the cost.</b> Output is {ot} of the tokens and {oc} of the cost. Long contexts are paid for by re-reading them.",
+    sessions_n: "{n} sessions", total_f: "{v} · filtered", top_items: "Top {n}",
+    s_session: "Session", s_kind: "Kind", s_context: "Context", s_last: "Last", s_week: "7 days",
+    runs_by_agent: "Runs by agent", runs_by_agent_aside: "last 7 days, by outcome", fail_reasons: "Why runs fail", run_list: "Runs",
+    r_total: "runs", r_done: "done", r_failed: "failed", r_running: "running", r_cancelled: "cancelled", r_queued: "queued", r_starting: "starting",
+    r_all: "All", r_live: "Running", r_failed_f: "Failed", r_done_f: "Done", all_agents: "All agents",
+    c_agent: "Agent · issue", c_model: "Model", c_status: "Status", c_started: "Started", c_min: "Min", c_tokens: "Tokens",
+    no_issue: "no issue", cancel_run: "Cancel", cancel_run_long: "Cancel run",
+    agent_models: "Agent models", switches: "Stop switches", a_agent: "Agent", a_runtime: "Runtime", a_model: "Model", a_thinking: "Thinking",
+    in_model_name: "in the model name", apply: "Apply", no_agents_list: "No agents.",
+    model_note_file: "Rewrites the agent's file, runs the push command, commits the file.", model_note_mx: "Runs multica agent update.",
+    sw_running: "running", sw_stopped: "stopped {t}", sw_stop: "Stop", sw_start: "Start", no_switches: "None configured. Add stop_files to the config to pause a watchdog or scheduler from here.",
+    switch_to: "Switch to {m}", start_it: "Start it",
+    cf_model_t: "Change this agent's model?", cf_model: "<b>{a}</b>: {o} → <b>{n}</b>", cf_model_sub: "{note} A running run is not affected; the next run uses the new model.",
+    cf_cancel_t: "Cancel this run?", cf_cancel_sub: "multica issue cancel-task. The issue stays and can be rerun.",
+    cf_stop_t: "Stop {n}?", cf_start_t: "Start {n}?", cf_stop_sub: "Creates its stop file.", cf_start_sub: "Removes its stop file.",
+    confirm: "Confirm", applying: "Applying…", applying_model: "Applying… pushing to Multica can take a minute or two.", failed: "Failed: {e}",
+    nothing_match: "Nothing matches these filters.", showing: "Showing {a} of {b}. Search to narrow it down.",
+    updated: "recording · updated {t}", unreachable: "server unreachable — is quotaboard running?",
+    all_fresh: "all sources fresh", collecting: "collecting: {x}", not_readable: "{x} not readable",
+    src_blocks: "window", src_daily: "daily", src_scan: "sessions", src_quotas: "quotas", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "issues", src_agents: "agents", src_stop_files: "switches",
+    other: "Other", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago", in_h: "{h} h {m} min", in_m: "{m} min", in_d: "{d} d {h} h",
+    adv: {
+      window_fills: ["At this pace the Claude window fills at {at}, before it resets at {end}.", "{usd} so far at {per_hour} an hour; the cap is estimated at {cap}. The app shows the real figure."],
+      window_high: ["{pct}% of the estimated Claude window cap is used.", "{usd} of an estimated {cap}."],
+      session_share: ["“{name}” is {pct}% of today's spend. Start a new session.", "{usd} of {total} today. Its context is {context} tokens and every message re-reads it; a short hand-over note and a fresh session reset that."],
+      session_context: ["“{name}” carries a {context}-token context.", "Every message re-reads it; the same work is much cheaper in a new session."],
+      agent_expensive: ["{agent} runs on an expensive model ({model}).", "Listed in rules.expensive_models. Sonnet is enough for most work."],
+      agent_opus: ["{agent} runs on Opus; the rules say Sonnet.", "Opus is allowed only for {allowed} (rules.opus_allowed_agents)."],
+      agent_thinking: ["{agent} runs at {thinking} thinking.", "Higher thinking means more output tokens; medium is enough for most work."],
+      runs_expensive: ["{agent} ran {n} times on an expensive model in the last 24 hours.", "The agent is no longer set to it; these may be runs from before the change."],
+      issue_failing: ["{issue} has failed {n} runs in a row ({agent}).", "Reason: {reasons}. Every retry burns tokens again."],
+      run_long: ["{agent} · {issue} has been running for {minutes} minutes.", "A long run may be stuck; check the issue and cancel if needed."],
+      agy_empty: ["Antigravity {account}: {group} {window} quota is used up ({left} left).", "Resets {reset}.{agents}"],
+      agy_empty_agents: " Agents on this account using it: {a}; they can move to another account's runtime.",
+      scheduled_spend: ["Scheduled tasks spent {usd} today.", "Running them less often would save that."],
+      switch_stopped: ["{name} is stopped.", "{description}"],
+    },
+  },
+  tr: {
+    recorder: "Kayıt", notes: "Notlar", today: "Bugün", analysis: "Analiz",
+    rec_note: "Bütün kotalar tek zaman ekseninde. Mürekkep olanı, kesik çizgi bu hızla gidişi, kırmızı sınırı gösterir.",
+    rec_now: "şimdi", lg_ink: "kullanılan / kalan", lg_pace: "bu hızla", lg_cap: "sınır (Claude: tahmin)", lg_reset: "sıfırlanma",
+    left: "kaldı", used: "kullanıldı", resets: "sıfırlanma", resets_in: "{d} sonra sıfırlanır", no_reset: "sıfırlanma saati yok", empty_at: "~{t}'de biter",
+    fills_at: "{t}'de dolar", fills_before: "{t}'de dolar; sıfırlanma {e}", safe_until: "{e} sıfırlanmasına kadar yeter",
+    est: "tahmin", cap: "tavan", per_hour: "saatte {v}", no_window: "açık pencere yok", from_app: "uygulamadan", entered: "{a} girildi",
+    set_app: "Uygulama %'si gir", app_title: "Claude uygulamasındaki yüzdeler", app_help: "Claude uygulamasının kullanım ayarlarındaki “kullanıldı” sayılarını yaz. Yalnız bu bilgisayarda saklanır.",
+    app_5h: "5 saatlik kullanılan %", app_week: "Haftalık kullanılan %", app_model: "Model haftalık kullanılan %", save: "Kaydet", cancel: "Vazgeç", close: "Kapat",
+    status_ok: "iyi", status_low: "az", status_empty: "bitti", status_off: "kapalı",
+    week_short: "hft", h5_short: "5s", monthly: "aylık", weekly: "haftalık", h5: "5 saatlik",
+    free_requests: "ücretsiz istek/gün", credit: "kredi", no_credit: "kredi yok", paid: "ücretli", free_tier: "ücretsiz katman",
+    agents_on: "ajanlar: {a}", no_agents: "ajan yok",
+    f_today: "Claude bugün", f_today_d: "7 günlük ortalama {a}; {p}", f_window: "Bu pencere", f_window_d: "{s}'den beri · {r}",
+    f_week: "Bu hafta", f_week_d: "geçen hafta {v}", f_cache: "Önbellek okumasına giden", f_cache_d: "bugünkü tokenların {p}'i, maliyetin {c}'i",
+    above: "%{p} üstünde", below: "%{p} altında",
+    unreadable: "Okunamayanlar: {x} kota bilgisini dışarı vermiyor.", unreadable1: "Okunamayan: {x} kota bilgisini dışarı vermiyor.",
+    no_ccusage: "ccusage kurulu değil (npm i -g ccusage); Claude harcaması boş kalır.",
+    show_all: "{n} notun hepsini göster", show_less: "Daha az göster", nothing: "Şu an dikkat edilecek bir şey yok.",
+    tab_spend: "Harcama", tab_sessions: "Oturumlar", tab_runs: "Multica koşuları", tab_agents: "Ajanlar ve anahtarlar",
+    span_today: "Bugün", span_window: "Bu pencere", span_week: "7 gün", search: "Ara: ajan, iş, başlık, proje…",
+    k_multica: "Multica", k_long: "Uzun oturum", k_interactive: "Etkileşimli", k_scheduled: "Zamanlanmış", k_side: "Yan oturum",
+    who: "Kim harcadı", heatmap: "Ne zaman yanıyor", heatmap_aside: "Claude $, gün × saat, son 7 gün",
+    by_day: "Gün ve türe göre", by_day_aside: "Claude $, son 7 gün", models_daily: "Günlere göre modeller", models_daily_aside: "Claude $, son 21 gün",
+    anatomy: "Tokenlar neye mal oluyor", windows: "5 saatlik pencereler", windows_aside: "son 3 gün, tavana göre",
+    projects: "Projeler", agents_spend: "Multica ajanları", issues: "Multica işleri",
+    tokens: "token", cost: "maliyet", t_input: "girdi", t_output: "çıktı", t_write: "önbellek yazma", t_read: "önbellek okuma",
+    anatomy_insight: "<b>Önbellek okumaları tokenların {rt}'i, maliyetin ise {rc}'i.</b> Çıktı tokenların {ot}'i, maliyetin {oc}'i. Uzun bağlamın bedeli onu her mesajda yeniden okumak.",
+    sessions_n: "{n} oturum", total_f: "{v} · süzülmüş", top_items: "İlk {n}",
+    s_session: "Oturum", s_kind: "Tür", s_context: "Bağlam", s_last: "Son", s_week: "7 gün",
+    runs_by_agent: "Ajanlara göre koşular", runs_by_agent_aside: "son 7 gün, sonuca göre", fail_reasons: "Koşular neden düşüyor", run_list: "Koşular",
+    r_total: "koşu", r_done: "bitti", r_failed: "düştü", r_running: "sürüyor", r_cancelled: "iptal", r_queued: "sırada", r_starting: "başlıyor",
+    r_all: "Tümü", r_live: "Süren", r_failed_f: "Düşen", r_done_f: "Biten", all_agents: "Bütün ajanlar",
+    c_agent: "Ajan · iş", c_model: "Model", c_status: "Durum", c_started: "Başlangıç", c_min: "Dk", c_tokens: "Token",
+    no_issue: "işsiz", cancel_run: "İptal", cancel_run_long: "Koşuyu iptal et",
+    agent_models: "Ajan modelleri", switches: "Durdurma anahtarları", a_agent: "Ajan", a_runtime: "Runtime", a_model: "Model", a_thinking: "Düşünme",
+    in_model_name: "modelin adında", apply: "Uygula", no_agents_list: "Ajan yok.",
+    model_note_file: "Ajanın dosyasını yazar, gönderme komutunu çalıştırır, dosyayı commit'ler.", model_note_mx: "multica agent update çalıştırır.",
+    sw_running: "çalışıyor", sw_stopped: "durdu {t}", sw_stop: "Durdur", sw_start: "Başlat", no_switches: "Tanımlı değil. Bir bekçiyi ya da zamanlayıcıyı buradan durdurmak için ayara stop_files ekle.",
+    switch_to: "{m} yap", start_it: "Başlat",
+    cf_model_t: "Ajanın modeli değişsin mi?", cf_model: "<b>{a}</b>: {o} → <b>{n}</b>", cf_model_sub: "{note} Süren koşu etkilenmez; sonraki koşu yeni modelle başlar.",
+    cf_cancel_t: "Koşu iptal edilsin mi?", cf_cancel_sub: "multica issue cancel-task. İş silinmez, yeniden başlatılabilir.",
+    cf_stop_t: "{n} dursun mu?", cf_start_t: "{n} başlasın mı?", cf_stop_sub: "Durdurma dosyasını oluşturur.", cf_start_sub: "Durdurma dosyasını kaldırır.",
+    confirm: "Onayla", applying: "Uygulanıyor…", applying_model: "Uygulanıyor… Multica'ya gönderim bir iki dakika sürebilir.", failed: "Olmadı: {e}",
+    nothing_match: "Bu filtreyle bir şey yok.", showing: "{b} satırın {a}'i gösteriliyor; aramayla daralt.",
+    updated: "kayıtta · güncellendi {t}", unreachable: "sunucuya ulaşılamıyor; quotaboard çalışıyor mu?",
+    all_fresh: "bütün kaynaklar güncel", collecting: "toplanıyor: {x}", not_readable: "{x} okunamadı",
+    src_blocks: "pencere", src_daily: "günlük", src_scan: "oturumlar", src_quotas: "kotalar", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "işler", src_agents: "ajanlar", src_stop_files: "anahtarlar",
+    other: "Diğer", min_ago: "{n} dk önce", h_ago: "{n} saat önce", d_ago: "{n} gün önce", in_h: "{h} sa {m} dk", in_m: "{m} dk", in_d: "{d} gün {h} sa",
+    adv: {
+      window_fills: ["Claude penceresi bu hızla {at}'de dolar; sıfırlanma {end}.", "Şimdiye kadar {usd}, saatte {per_hour}; tavan tahmini {cap}. Gerçek değer uygulamada."],
+      window_high: ["Tahmini Claude pencere tavanının %{pct}'i kullanıldı.", "Tahmini {cap} tavanın {usd}'ı."],
+      session_share: ["“{name}” bugünkü harcamanın %{pct}'i. Yeni oturuma geç.", "Bugün {total}'ın {usd}'ı. Bağlamı {context} token ve her mesaj bunu yeniden okuyor; kısa bir devir notu ve yeni oturum bunu sıfırlar."],
+      session_context: ["“{name}” oturumunun bağlamı {context} token.", "Her mesaj bunu yeniden okuyor; aynı iş yeni oturumda çok daha ucuz."],
+      agent_expensive: ["{agent} pahalı bir model kullanıyor ({model}).", "rules.expensive_models listesinde. Çoğu iş için Sonnet yeter."],
+      agent_opus: ["{agent} Opus kullanıyor; kurala göre Sonnet olmalı.", "Opus yalnız şu ajanlarda: {allowed} (rules.opus_allowed_agents)."],
+      agent_thinking: ["{agent} {thinking} düşünme seviyesinde.", "Yüksek düşünme çıktı tokenını artırır; çoğu iş için orta yeter."],
+      runs_expensive: ["{agent} son 24 saatte {n} koşuyu pahalı modelle yaptı.", "Ajan artık o modelde değil; bunlar değişiklikten önceki koşular olabilir."],
+      issue_failing: ["{issue} {n} koşudur düşüyor ({agent}).", "Sebep: {reasons}. Her yeniden deneme yine token yakar."],
+      run_long: ["{agent} · {issue} koşusu {minutes} dakikadır sürüyor.", "Uzun koşu takılmış olabilir; işe bakıp gerekirse iptal et."],
+      agy_empty: ["Antigravity {account}: {group} {window} kotası bitti ({left} kaldı).", "Sıfırlanma {reset}.{agents}"],
+      agy_empty_agents: " Bu hesapta bunu kullanan ajanlar: {a}; başka hesabın runtime'ına taşınabilirler.",
+      scheduled_spend: ["Zamanlanmış görevler bugün {usd} harcadı.", "Daha seyrek çalıştırmak bunu azaltır."],
+      switch_stopped: ["{name} durdurulmuş.", "{description}"],
+    },
+  },
+};
+let LANG = "en";
+try { LANG = localStorage.getItem("quotaboard-lang") || ((navigator.language || "").toLowerCase().startsWith("tr") ? "tr" : "en"); } catch (e) {}
+const t = (k, p = {}) => String(I18N[LANG][k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => p[x] ?? "");
+const loc = () => LANG === "tr" ? "tr-TR" : "en-GB";
+
+// ---------- formatting ----------
+const usd = x => x == null ? "–" : "$" + (Math.abs(x) >= 100 ? Math.round(x).toLocaleString(loc()) : Number(x).toFixed(2));
+const usd0 = x => x == null ? "–" : "$" + Math.round(x).toLocaleString(loc());
+const tok = x => { if (x == null) return "–"; const [u, sp] = LANG === "tr" ? [["mr", "mn", "b"], " "] : [["B", "M", "k"], ""]; return x >= 1e9 ? (x/1e9).toFixed(1) + sp + u[0] : x >= 1e6 ? (x/1e6).toFixed(1) + sp + u[1] : x >= 1e3 ? Math.round(x/1e3) + sp + u[2] : String(x); };
+const pc = x => LANG === "tr" ? "%" + Math.round(x) : Math.round(x) + "%";
+const hm = s => s ? new Date(s).toLocaleTimeString(loc(), {hour: "2-digit", minute: "2-digit"}) : "–";
+const dayHm = s => s ? new Date(s).toLocaleString(loc(), {weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "–";
+const when = s => { if (!s) return "–"; const d = new Date(s), n = new Date(); return d.toDateString() === n.toDateString() ? hm(s) : dayHm(s); };
+const ago = s => { if (!s) return ""; const m = Math.round((Date.now() - new Date(s)) / 60000); return m < 60 ? t("min_ago", {n: m}) : m < 1440 ? t("h_ago", {n: Math.round(m / 60)}) : t("d_ago", {n: Math.round(m / 1440)}); };
+const until = s => { const m = Math.max(0, Math.round((new Date(s) - Date.now()) / 60000)); return m >= 1440 ? t("in_d", {d: Math.floor(m / 1440), h: Math.floor(m % 1440 / 60)}) : m >= 60 ? t("in_h", {h: Math.floor(m / 60), m: m % 60}) : t("in_m", {m}); };
+const MVAR = m => (m || "").includes("opus") ? "--m-opus" : (m || "").includes("fable") ? "--m-fable" : (m || "").includes("sonnet") ? "--m-sonnet" : (m || "").includes("haiku") ? "--m-haiku" : "--m-other";
+const MNAME = m => (m || "").replace("claude-", "").replace(/-(\d)-(\d)$/, " $1.$2");
+const KINDS = ["multica", "long", "interactive", "scheduled", "side"];
+const KVAR = k => `--k-${k}`;
+const WIN = w => ({"5h": t("h5"), weekly: t("weekly"), monthly: t("monthly")})[w] || w;
+const GROUP = g => g.replace("Claude and GPT models", "Claude / GPT").replace("Gemini Models", "Gemini").replace("Gemini 4 Argon", "Argon");
+const cssv = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// ---------- state ----------
+const F = {span: "today", kinds: [...KINDS], search: "", tab: "spend", rstatus: "", ragent: "", sort: {}};
 try { Object.assign(F, JSON.parse(localStorage.getItem("quotaboard") || "{}")); } catch (e) {}
 const save = () => { try { localStorage.setItem("quotaboard", JSON.stringify(F)); } catch (e) {} };
-let data = null, pending = null, editing = false, allAdvice = false;
+let D = null, pending = null, editing = false, allNotes = false, drawnOnce = false;
 
-function toast(msg, ms = 6000) {
-  const t = $("toast"); t.textContent = msg; t.style.display = "block";
-  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms);
-}
-function confirmBox(title, html, fn) { $("confirm_title").textContent = title; $("confirm_text").innerHTML = html; pending = fn; $("confirm").showModal(); }
+// ---------- feedback, confirm, actions ----------
+function toast(msg, ms = 6000) { const el = $("toast"); el.textContent = msg; el.classList.add("on"); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove("on"), ms); }
+function confirmBox(title, html, fn) { $("confirm_title").textContent = title; $("confirm_text").innerHTML = html; $("confirm_no").textContent = t("cancel"); $("confirm_yes").textContent = t("confirm"); pending = fn; $("confirm").showModal(); }
 $("confirm_no").onclick = () => { pending = null; $("confirm").close(); };
-$("confirm_yes").onclick = async () => {
-  const fn = pending; pending = null; $("confirm_yes").disabled = true;
-  try { await fn(); } finally { $("confirm_yes").disabled = false; $("confirm").close(); }
-};
+$("confirm_yes").onclick = async () => { const fn = pending; pending = null; $("confirm_yes").disabled = true; try { await fn(); } finally { $("confirm_yes").disabled = false; $("confirm").close(); } };
 async function act(path, body) {
-  toast(path === "/api/model" ? "Applying… pushing to Multica can take a minute or two; keep the page open." : "Applying…", 300000);
-  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json", "X-Quotaboard": TOKEN}, body: JSON.stringify(body)});
-  const j = await r.json().catch(() => ({error: "could not read the reply"}));
-  toast(r.ok ? j.message + (j.output ? "\n\n" + j.output : "") : "Failed: " + j.error, 12000);
+  toast(path === "/api/model" ? t("applying_model") : t("applying"), 300000);
+  try {
+    const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json", "X-Quotaboard": TOKEN}, body: JSON.stringify(body)});
+    const j = await r.json().catch(() => ({error: "?"}));
+    toast(r.ok ? j.message + (j.output ? "\n\n" + j.output : "") : t("failed", {e: j.error}), 12000);
+  } catch (e) { toast(t("failed", {e: e.message}), 12000); }
   load();
 }
+const modelNote = () => D?.model_action === "file" ? t("model_note_file") : t("model_note_mx");
 function confirmModel(a, model, thinking) {
   const o = a.model + (a.thinking ? " / " + a.thinking : ""), n = model + (thinking ? " / " + thinking : "");
-  confirmBox("Change this agent's model?", `<b>${esc(a.name)}</b>: ${esc(o)} → <b>${esc(n)}</b><br><span class="muted small">${esc(modelNote())} A running run is not affected; the next run starts with the new model.</span>`,
-    () => act("/api/model", {agent: a.name, model, thinking}));
+  confirmBox(t("cf_model_t"), t("cf_model", {a: esc(a.name), o: esc(o), n: esc(n)}) + `<span class="sub">${esc(t("cf_model_sub", {note: modelNote()}))}</span>`, () => act("/api/model", {agent: a.name, model, thinking}));
 }
-function confirmCancel(run, label) {
-  confirmBox("Cancel this run?", `<b>${esc(label)}</b><br><span class="muted small">multica issue cancel-task. The issue stays; it can be rerun.</span>`, () => act("/api/cancel", {run}));
-}
+function confirmCancel(run, label) { confirmBox(t("cf_cancel_t"), `<b>${esc(label)}</b><span class="sub">${esc(t("cf_cancel_sub"))}</span>`, () => act("/api/cancel", {run})); }
 function confirmSwitch(i, stop) {
-  const d = data.stop_files[i];
-  confirmBox(stop ? `Stop ${d.name}?` : `Start ${d.name}?`, `${esc(d.description || "")}<br><span class="muted small">${stop ? "Creates" : "Removes"} its stop file.</span>`, () => act("/api/stop-file", {i, stop}));
+  const d = D.stop_files[i];
+  confirmBox(t(stop ? "cf_stop_t" : "cf_start_t", {n: d.name}), `${esc(d.description || "")}<span class="sub">${esc(t(stop ? "cf_stop_sub" : "cf_start_sub"))}</span>`, () => act("/api/stop-file", {i, stop}));
 }
-const modelNote = () => data?.model_action === "file" ? "The agent's file is rewritten, the push command sends it to Multica, and the file is committed." : "Runs multica agent update.";
 
-// ---------- quotas ----------
-function limitRow(name, left, text, reset, note) {
-  const ok = left != null && !isNaN(left);
-  const c = !ok ? "var(--muted)" : left <= 10 ? "var(--red)" : left <= 35 ? "var(--amber)" : "var(--green)";
-  return `<div class="limit"><div class="top"><span>${esc(name)}</span><b style="color:${c}">${esc(text ?? (ok ? Math.round(left) + "% left" : "–"))}</b></div>
-    <div class="bar">${ok ? `<span style="width:${Math.max(0, Math.min(100, left))}%;background:${c}"></span>` : ""}</div>
-    ${reset || note ? `<div class="reset">${reset ? "resets " + esc(dayHm(reset)) : ""}${reset && note ? " · " : ""}${esc(note || "")}</div>` : ""}</div>`;
+// ---------- svg helpers ----------
+function el(tag, attrs = {}, parent) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v); if (parent) parent.appendChild(e); return e; }
+function txt(parent, x, y, s, attrs = {}) { const e = el("text", {x, y, ...attrs}, parent); e.textContent = s; return e; }
+const statusOf = left => left == null ? "off" : left <= 2 ? "empty" : left <= 25 ? "low" : "ok";
+const STATUS_COLOR = {ok: "--green", low: "--amber", empty: "--pen-red", off: "--ink-3"};
+function statusIcon(parent, x, y, st) {  // drawn shapes: square ok, diamond low, triangle empty, ring off
+  const c = `var(${STATUS_COLOR[st]})`;
+  if (st === "ok") el("rect", {x: x - 3.5, y: y - 3.5, width: 7, height: 7, rx: 1.5, fill: c}, parent);
+  else if (st === "low") el("path", {d: `M${x} ${y - 5} L${x + 5} ${y} L${x} ${y + 5} L${x - 5} ${y} Z`, fill: c}, parent);
+  else if (st === "empty") el("path", {d: `M${x} ${y - 5} L${x + 5.5} ${y + 4} L${x - 5.5} ${y + 4} Z`, fill: c}, parent);
+  else el("circle", {cx: x, cy: y, r: 3.5, fill: "none", stroke: c, "stroke-width": 1.5}, parent);
 }
-const LIM = s => /weekly/i.test(s) ? "weekly" : /five hour/i.test(s) ? "5-hour" : s;
-function users(v, names) { const l = names.flatMap(n => v.runtimes[n]?.agents || []); return l.length ? l.join(", ") : ""; }
-function byProvider(v, p) { return Object.entries(v.runtimes).filter(([, r]) => r.provider === p).map(([n]) => n); }
-const usedBy = (v, names) => v.multica ? ` · Agents: ${users(v, names) || "none"}` : "";
+function levelIcon(level) {
+  const c = level === "high" ? "var(--pen-red)" : level === "medium" ? "var(--amber)" : "var(--ink-3)";
+  const shape = level === "high" ? `<path d="M7 1.5 L12.5 11 H1.5 Z" fill="${c}"/>` : level === "medium" ? `<path d="M7 1.5 L12.5 7 L7 12.5 L1.5 7 Z" fill="${c}"/>` : `<circle cx="7" cy="7" r="4.2" fill="none" stroke="${c}" stroke-width="1.6"/>`;
+  return `<svg class="lv" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">${shape}</svg>`;
+}
 
-function renderQuotas(v) {
-  const q = v.quotas || {}, cards = [];
-  const w = v.window, cl = q.claude || {}, m0 = cl.manual;
-  const manual = m0 && ["five_hour", "weekly", "weekly_model"].some(k => m0[k] != null) ? m0 : null;
-  let c = `<div class="card quota"><h2><span>Claude</span><span class="pill">${esc(cl.plan || "?")}</span></h2>
-    <div class="sub">Claude Code sessions${usedBy(v, byProvider(v, "claude"))}</div>`;
-  if (w && w.cap) c += limitRow("5-hour (estimate)", 100 - pct(w.usd, w.cap), null, w.end, w.full_before_end ? `full at ${hm(w.full_at)} at this pace` : `${usd(w.per_hour)} per hour`);
-  else c += limitRow("5-hour (estimate)", 100, "no open window", null, "no Claude use in the last 5 hours");
-  if (manual) {
-    if (manual.five_hour != null) c += limitRow("5-hour (from the app)", 100 - manual.five_hour, null, null, "entered " + ago(manual.at));
-    if (manual.weekly != null) c += limitRow("weekly (from the app)", 100 - manual.weekly, null, null, "entered " + ago(manual.at));
-    if (manual.weekly_model != null) c += limitRow("weekly, model-specific (from the app)", 100 - manual.weekly_model, null, null, "entered " + ago(manual.at));
-  } else c += limitRow("weekly", null, "not readable", null, "only shown in the Claude app; type it in below");
-  c += `<details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Enter the app's used percentages</summary>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center" class="small">
-      5-hour % <input type="number" min="0" max="100" id="cp_5" value="${manual?.five_hour ?? ""}">
-      weekly % <input type="number" min="0" max="100" id="cp_w" value="${manual?.weekly ?? ""}">
-      model weekly % <input type="number" min="0" max="100" id="cp_m" value="${manual?.weekly_model ?? ""}">
-      <button id="cp_save">Save</button></div>
-    <div class="muted small" style="margin-top:4px">The "used" numbers from the Claude app's usage settings. Kept only on this computer.</div></details></div>`;
-  cards.push(c);
+// ---------- the recorder ----------
+function lanes(v) {
+  const L = [], q = v.quotas || {}, H = v.history || {};
+  const series = k => (H[k] || []).map(([ts, val]) => [new Date(ts).getTime(), val]);
+  L.push({id: "claude", group: "Claude", sub: q.claude?.plan || "", claude: true});
   for (const [name, a] of Object.entries(v.antigravity || {})) {
-    let k = `<div class="card quota"><h2><span>Antigravity ${esc(name)}</span></h2><div class="sub">${esc(a.command)}${a.note ? " · " + esc(a.note) : ""}${usedBy(v, a.runtimes || [])}</div>`;
-    if (a.error) k += `<div style="color:var(--red)" class="small">Not readable: ${esc(a.error)}</div>`;
-    else for (const r of a.rows) {
-      const n = parseInt(r.left), g = r.group.replace("Claude and GPT models", "Claude/GPT").replace("Gemini Models", "Gemini").replace("Gemini 4 Argon", "Argon");
-      k += limitRow(`${g} · ${LIM(r.limit)}`, isNaN(n) ? null : n, isNaN(n) ? (r.left === "disabled" ? "off" : r.left) : null, r.reset);
+    if (a.error) { L.push({group: "Antigravity " + name, sub: a.error, error: true}); continue; }
+    for (const r of a.rows) {
+      const w = /weekly/i.test(r.limit) ? "weekly" : /five hour/i.test(r.limit) ? "5h" : r.limit;
+      const n = parseFloat(r.left);
+      L.push({group: "Antigravity " + name, sub: `${GROUP(r.group)} · ${WIN(w)}`, left: isNaN(n) ? null : n, off: isNaN(n), reset: r.reset,
+        pts: series(`agy|${name}|${r.group}|${w}`), agents: (a.runtimes || []).flatMap(rt => v.runtimes[rt]?.agents || []), note: a.note});
     }
-    cards.push(k + "</div>");
   }
-  if (q.codex) {
-    const x = q.codex;
-    cards.push(`<div class="card quota"><h2><span>Codex</span><span class="pill">${esc(x.plan || "")}</span></h2>
-      <div class="sub">${x.account ? "ChatGPT account " + esc(x.account) : ""}${usedBy(v, byProvider(v, "codex"))}</div>
-      ${x.error ? `<div style="color:var(--red)" class="small">Not readable: ${esc(x.error)}</div>` : x.rows.map(r => limitRow(r.name, r.left, null, r.reset)).join("")}</div>`);
+  if (q.codex && !q.codex.error) for (const r of q.codex.rows) L.push({group: "Codex", sub: `${q.codex.plan || ""} · ${WIN(r.window)}`, left: r.left, reset: r.reset, pts: series(`codex|${r.window}`)});
+  if (q.openrouter && !q.openrouter.error) {
+    const fr = q.openrouter.rows.find(r => r.kind === "free_requests");
+    if (fr) L.push({group: "OpenRouter", sub: `${t("free_requests")} · ${fr.remaining}/${fr.limit}`, left: fr.left, pts: series("openrouter|free_requests")});
   }
-  if (q.openrouter) {
-    const x = q.openrouter;
-    cards.push(`<div class="card quota"><h2><span>OpenRouter</span><span class="pill">${esc(x.plan || "")}</span></h2>
-      <div class="sub">opencode's key · ${esc(x.usage || "")}${usedBy(v, byProvider(v, "opencode"))}</div>
-      ${x.error ? `<div style="color:var(--red)" class="small">Not readable: ${esc(x.error)}</div>` : x.rows.map(r => limitRow(r.name, r.left, r.text, r.reset)).join("")}</div>`);
-  }
-  $("quotas").innerHTML = cards.join("");
-  const inst = q.installed || {}, miss = [];
-  if (inst.opencode) miss.push("OpenCode Zen (opencode's own provider)");
-  if (inst.gemini) miss.push("Gemini CLI");
-  $("unreadable").innerHTML = (miss.length ? `<b>Not readable:</b> ${esc(miss.join(" and "))} ${miss.length > 1 ? "do" : "does"} not expose quota. ` : "")
-    + `The Claude percentage is an estimate: this window's $ spend ÷ a cap (${esc(w?.cap_source || "–")}, ${usd(w?.cap)}). The real value is in the Claude app.`
-    + (inst.ccusage ? "" : ` <b>ccusage is not installed</b> (npm i -g ccusage); Claude spending stays empty.`);
-  if ($("cp_save")) $("cp_save").onclick = () => act("/api/claude", {five_hour: $("cp_5").value, weekly: $("cp_w").value, weekly_model: $("cp_m").value});
+  return L;
 }
 
-// ---------- advice ----------
-function renderAdvice(v) {
+function claudeTrace(v) {
+  // cumulative Claude $ inside each 5-hour window, from the hourly totals
+  const hourly = v.hourly || {}, out = [];
+  for (const w of v.recent_windows || []) {
+    const s = new Date(w.start).getTime(), close = new Date(w.close).getTime(), end = w.active ? Date.now() : new Date(w.end || w.close).getTime();
+    let cum = 0; const pts = [[s, 0]];
+    for (let h = s; h < Math.min(close, end); h += 3600e3) {
+      const key = new Date(h).toISOString().slice(0, 13);
+      cum += Object.values(hourly[key] || {}).reduce((a, b) => a + b, 0);
+      pts.push([Math.min(h + 3600e3, end), cum]);
+    }
+    out.push({start: s, close, end, active: w.active, usd: w.usd, pts});
+  }
+  return out;
+}
+
+function drawRecorder(v) {
+  const svg = $("recorder"), W = $("sheet").clientWidth, narrow = W < 760;
+  svg.innerHTML = "";
+  const LW = narrow ? 0 : 216, RW = narrow ? 0 : 196, PADT = 30, laneH = narrow ? 70 : 46, claudeH = narrow ? 200 : 168;
+  const L = lanes(v), nOther = L.length - 1;
+  const H = PADT + claudeH + nOther * laneH + 26;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  const now = Date.now(), t0 = now - (narrow ? 10 : 18) * 3600e3, t1 = now + 6 * 3600e3;
+  const px0 = LW + 14, px1 = W - RW - 14;
+  const x = tm => px0 + (Math.max(t0, Math.min(t1, tm)) - t0) / (t1 - t0) * (px1 - px0);
+  const g = el("g", {}, svg);
+
+  // hour ticks
+  const first = Math.ceil(t0 / 3600e3) * 3600e3;
+  for (let h = first; h <= t1; h += 3600e3) {
+    const d = new Date(h), major = d.getHours() % 3 === 0;
+    el("line", {x1: x(h), x2: x(h), y1: PADT - 6, y2: H - 22, stroke: major ? cssv("--rule-2") : "transparent", "stroke-width": 1}, g);
+    if (major) txt(g, x(h), H - 8, d.toLocaleTimeString(loc(), {hour: "2-digit", minute: "2-digit"}), {"text-anchor": "middle", "font-size": 10.5, class: "mono", fill: cssv("--ink-3")});
+    if (d.getHours() === 0) txt(g, x(h) + 4, PADT - 12, d.toLocaleDateString(loc(), {weekday: "short", day: "numeric"}), {"font-size": 10.5, fill: cssv("--ink-3")});
+  }
+
+  // claude lane: windows, cap, ink trace, pace
+  const cy0 = PADT, cy1 = PADT + claudeH - 14, w = v.window, cap = w?.cap;
+  const traces = claudeTrace(v);
+  const ymax = Math.max(cap || 0, ...traces.map(tr => tr.pts.at(-1)[1]), w ? w.usd : 0, 1) * 1.12;
+  const ctop = cy0 + (narrow ? 58 : 8);
+  const y = val => cy1 - val / ymax * (cy1 - ctop);
+  for (const tr of traces) {
+    if (tr.close < t0) continue;
+    el("rect", {x: x(tr.start), y: cy0, width: Math.max(0, x(tr.close) - x(tr.start)), height: cy1 - cy0, fill: tr.active ? cssv("--wash-blue") : cssv("--band")}, g);
+    if (!narrow) txt(g, x(tr.start) + 5, cy0 + 12, `${hm(tr.start)}–${hm(tr.close)}`, {"font-size": 10, class: "mono", fill: cssv("--ink-3")});
+  }
+  if (cap) {
+    el("line", {x1: px0, x2: px1, y1: y(cap), y2: y(cap), stroke: cssv("--pen-red"), "stroke-width": 1.5}, g);
+    txt(g, px0 + 4, y(cap) - 5, `${t("cap")} ${usd0(cap)} · ${t("est")}`, {"font-size": 10.5, fill: cssv("--pen-red")});
+  }
+  for (const tr of traces) {
+    const pts = tr.pts.filter(p => p[0] >= t0 - 3600e3);
+    if (pts.length < 2) continue;
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)} ${y(p[1]).toFixed(1)}`).join(" ");
+    const path = el("path", {d, fill: "none", stroke: cssv("--ink"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", class: "ink"}, g);
+    if (tr.active && w) {
+      const last = pts.at(-1), endT = w.full_before_end ? new Date(w.full_at).getTime() : tr.close;
+      const endV = last[1] + w.per_hour * (endT - last[0]) / 3600e3;
+      el("path", {d: `M${x(last[0])} ${y(last[1])} L${x(endT)} ${y(Math.min(endV, ymax / 1.12))}`, stroke: w.full_before_end ? cssv("--pen-red") : cssv("--ink-2"), "stroke-width": 1.6, "stroke-dasharray": "5 4", fill: "none"}, g);
+      el("circle", {cx: x(last[0]), cy: y(last[1]), r: 4, fill: cssv("--ink"), stroke: cssv("--sheet"), "stroke-width": 2}, g);
+      if (w.full_before_end) {
+        const fx = x(endT), fy = y(cap);
+        el("circle", {cx: fx, cy: fy, r: 4.5, fill: "none", stroke: cssv("--pen-red"), "stroke-width": 1.8}, g);
+        const label = t("fills_at", {t: hm(w.full_at)});
+        const lw = label.length * 6.6 + 14, lx = Math.min(fx + 8, px1 - lw);
+        el("rect", {x: lx, y: fy - 30, width: lw, height: 19, rx: 3, fill: cssv("--sheet"), stroke: cssv("--pen-red"), "stroke-width": 1}, g);
+        txt(g, lx + 7, fy - 16.5, label, {"font-size": 11.5, fill: cssv("--pen-red"), "font-weight": 600});
+      }
+    }
+  }
+  // lane labels and readouts
+  const label = (yy, a, b, first) => {
+    if (narrow) { txt(g, 12, yy, (first ? a + " · " : "") + (b || ""), {"font-size": 12, fill: cssv("--ink"), "font-weight": 600}); return; }
+    if (first) txt(g, 16, yy - 6, a, {"font-size": 12.5, "font-weight": 650, fill: cssv("--ink")});
+    if (b) txt(g, 16, yy + (first ? 9 : 3), b, {"font-size": 11.5, fill: cssv("--ink-3")});
+  };
+  const readout = (yy, big, small, st) => {
+    if (narrow) { if (st) statusIcon(g, 16, yy - 4, st); txt(g, st ? 26 : 12, yy, `${big}${small ? " · " + small : ""}`, {"font-size": 11, fill: cssv("--ink-2")}); return; }
+    const rx = W - RW + 6;
+    if (st) statusIcon(g, rx + 4, yy - 9, st);
+    txt(g, rx + 15, yy - 4, big, {"font-size": 15, class: "mono", fill: cssv("--ink"), "font-weight": 500});
+    txt(g, rx + 15, yy + 11, small, {"font-size": 11, fill: cssv("--ink-3")});
+  };
+  const cMid = (cy0 + cy1) / 2;
+  label(narrow ? cy0 + 16 : cMid, "Claude", L[0].sub, true);
+  const manual = v.quotas?.claude?.manual;
+  if (w && cap) {
+    const leftPct = Math.max(0, 100 - w.usd / cap * 100);
+    readout(narrow ? cy0 + 32 : cMid - 14, `${pc(leftPct)} ${t("left")}`, `${t("est")} · ${t("resets_in", {d: until(w.end)})}`, statusOf(leftPct));
+    readout(narrow ? cy0 + 47 : cMid + 24, `${usd(w.usd)}`, `${t("per_hour", {v: usd(w.per_hour)})} · ${w.full_before_end ? t("fills_at", {t: hm(w.full_at)}) : t("safe_until", {e: hm(w.end)})}`);
+  } else readout(cMid, t("no_window"), "", "off");
+  if (!narrow) {
+    const btnY = cy1 + 2;
+    const mt = manual && ["five_hour", "weekly", "weekly_model"].some(k => manual[k] != null)
+      ? [manual.five_hour != null ? `${t("h5_short")} ${pc(manual.five_hour)}` : "", manual.weekly != null ? `${t("week_short")} ${pc(manual.weekly)}` : "", manual.weekly_model != null ? `model ${pc(manual.weekly_model)}` : ""].filter(Boolean).join(" · ") + ` ${t("used")} · ${ago(manual.at)}` : "";
+    if (mt) txt(g, 16, btnY - 22, `${t("from_app")}: ${mt}`, {"font-size": 11, fill: cssv("--ink-3")});
+    const b = txt(g, 16, btnY - 6, t("set_app"), {"font-size": 11.5, fill: cssv("--pen-blue"), "text-decoration": "underline", style: "cursor:pointer", tabindex: 0, role: "button"});
+    b.addEventListener("click", openAppEntry); b.addEventListener("keydown", e => (e.key === "Enter" || e.key === " ") && openAppEntry());
+  }
+  el("line", {x1: 0, x2: W, y1: cy1 + 10, y2: cy1 + 10, stroke: cssv("--rule-2")}, g);
+
+  // other lanes
+  const laneFns = [];
+  let prevGroup = null;
+  L.slice(1).forEach((ln, i) => {
+    const top = cy1 + 10 + i * laneH, bot = top + laneH, ly0 = top + (narrow ? 42 : 9), ly1 = bot - 8;
+    const ly = val => ly1 - val / 100 * (ly1 - ly0);
+    const first = ln.group !== prevGroup; prevGroup = ln.group;
+    if (first && i) el("line", {x1: 0, x2: W, y1: top, y2: top, stroke: cssv("--rule-2")}, g);
+    else if (i) el("line", {x1: LW + (narrow ? 0 : 10), x2: W, y1: top, y2: top, stroke: cssv("--rule"), "stroke-dasharray": "2 3"}, g);
+    const mid = (top + bot) / 2;
+    label(narrow ? top + 17 : mid, narrow ? ln.group : ln.group, ln.sub, first || narrow);
+    if (ln.error) { txt(g, px0, mid + 4, ln.sub, {"font-size": 11.5, fill: cssv("--pen-red")}); return; }
+    el("line", {x1: px0, x2: px1, y1: ly(0), y2: ly(0), stroke: cssv("--pen-red"), "stroke-width": 1, opacity: .22}, g);
+    if (ln.off) { if (!narrow) txt(g, px0 + 4, mid + 4, t("status_off"), {"font-size": 11, fill: cssv("--ink-3")}); readout(narrow ? top + 33 : mid, t("status_off"), "", "off"); return; }
+    const pts = [...(ln.pts || [])].filter(p => p[0] >= t0 - 6 * 3600e3);
+    if (!pts.length || now - pts.at(-1)[0] > 60e3) pts.push([now, ln.left]);
+    // step trace: a reading holds until the next one
+    let d = "";
+    pts.forEach((p, k) => { const px = x(p[0]), py = ly(p[1]); d += k ? `H${px.toFixed(1)}V${py.toFixed(1)}` : `M${px.toFixed(1)} ${py.toFixed(1)}`; });
+    d += `H${x(now).toFixed(1)}`;
+    el("path", {d, fill: "none", stroke: cssv("--ink"), "stroke-width": 2, "stroke-linejoin": "round", class: "ink"}, g);
+    el("circle", {cx: x(now), cy: ly(ln.left), r: 4, fill: cssv("--ink"), stroke: cssv("--sheet"), "stroke-width": 2}, g);
+    // pace from the readings of the last 3 hours, if it is falling
+    const recent = pts.filter(p => p[0] >= now - 3 * 3600e3);
+    let emptyAt = null;
+    const reset = ln.reset ? new Date(ln.reset).getTime() : null;
+    // only a real trend: readings at least 30 minutes apart that fell by 2 points or more
+    if (recent.length >= 2 && recent.at(-1)[0] - recent[0][0] >= 30 * 60e3 && recent[0][1] - recent.at(-1)[1] >= 2) {
+      const slope = (recent.at(-1)[1] - recent[0][1]) / (recent.at(-1)[0] - recent[0][0]);
+      emptyAt = now + ln.left / -slope;
+      const stop = Math.min(emptyAt, reset || Infinity, t1);
+      el("path", {d: `M${x(now)} ${ly(ln.left)} L${x(stop)} ${ly(Math.max(0, ln.left + slope * (stop - now)))}`, stroke: emptyAt < (reset || Infinity) ? cssv("--pen-red") : cssv("--ink-2"), "stroke-width": 1.5, "stroke-dasharray": "5 4", fill: "none"}, g);
+    }
+    if (reset && reset <= t1) {
+      const rx = x(reset);
+      el("path", {d: `M${rx} ${ly1 + 2} V${ly0 - 2} l6 3 l-6 3`, stroke: cssv("--pen-red"), "stroke-width": 1.4, fill: cssv("--pen-red")}, g);
+      el("path", {d: `M${rx} ${ly(ln.left)} H${rx} V${ly(100)} H${Math.min(px1, rx + 40)}`, stroke: cssv("--ink-3"), "stroke-width": 1.2, "stroke-dasharray": "2 3", fill: "none"}, g);
+    } else if (reset && !narrow) txt(g, px1, ly0 + 2, `→ ${dayHm(ln.reset)}`, {"text-anchor": "end", "font-size": 10.5, fill: cssv("--ink-3")});
+    const st = statusOf(ln.left);
+    const small = emptyAt && emptyAt < (reset || Infinity) && emptyAt < now + 7 * 864e5 ? t("empty_at", {t: when(new Date(emptyAt))}) : reset ? t("resets_in", {d: until(ln.reset)}) : t("no_reset");
+    readout(narrow ? top + 33 : mid, `${pc(ln.left)} ${t("left")}`, small, st);
+    laneFns.push({name: `${ln.group} · ${ln.sub}`, at: tm => { let val = null; for (const p of pts) { if (p[0] <= tm) val = p[1]; } return tm > now ? null : val; }, fmt: val => pc(val)});
+  });
+
+  // now
+  el("line", {x1: x(now), x2: x(now), y1: PADT - 8, y2: H - 22, stroke: cssv("--pen-blue"), "stroke-width": 1.5}, g);
+  txt(g, x(now), PADT - 12, t("rec_now"), {"text-anchor": "middle", "font-size": 10.5, fill: cssv("--pen-blue"), "font-weight": 600});
+
+  // first draw: the pen writes the ink in
+  if (!drawnOnce && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    svg.querySelectorAll("path.ink").forEach(p => { const len = p.getTotalLength(); p.style.strokeDasharray = len; p.style.strokeDashoffset = len; p.getBoundingClientRect(); p.style.transition = "stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1)"; p.style.strokeDashoffset = 0; setTimeout(() => { p.style.strokeDasharray = ""; p.style.transition = ""; }, 1200); });
+    drawnOnce = true;
+  }
+
+  // crosshair
+  const cross = el("line", {y1: PADT - 6, y2: H - 22, stroke: cssv("--ink-2"), "stroke-width": 1, "stroke-dasharray": "3 3", visibility: "hidden"}, svg);
+  const hit = el("rect", {x: px0, y: 0, width: px1 - px0, height: H, fill: "transparent"}, svg);
+  const tip = $("rec_tip");
+  const cum = tm => { for (const tr of traces) if (tm >= tr.start && tm <= Math.max(tr.end, tr.start)) { let val = 0; for (const p of tr.pts) if (p[0] <= tm) val = p[1]; return val; } return null; };
+  hit.addEventListener("mousemove", e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) * (W / r.width);
+    const tm = t0 + (mx - px0) / (px1 - px0) * (t1 - t0);
+    cross.setAttribute("x1", mx); cross.setAttribute("x2", mx); cross.setAttribute("visibility", "visible");
+    const c = cum(tm);
+    const rows = [[`Claude ${t("used")}`, c != null && tm <= now ? usd(c) : "–"], ...laneFns.map(f => { const val = f.at(tm); return [f.name, val == null ? "–" : f.fmt(val)]; })];
+    tip.innerHTML = `<div style="margin-bottom:4px"><b>${esc(dayHm(new Date(tm)))}</b></div>` + rows.map(([a, b]) => `<div class="row"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("");
+    const tw = tip.offsetWidth || 220, left = (e.clientX - r.left) + 14;
+    tip.style.left = (left + tw > r.width ? left - tw - 28 : left) + "px"; tip.style.top = "36px"; tip.classList.add("on");
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); tip.classList.remove("on"); });
+
+  $("rec_legend").innerHTML = `<span><i class="key-line"></i>${esc(t("lg_ink"))}</span><span><i class="key-line key-dash"></i>${esc(t("lg_pace"))}</span><span><i class="key-line key-red"></i>${esc(t("lg_cap"))}</span>
+    <span><svg width="10" height="12" aria-hidden="true"><path d="M1 11 V1 l6 3 l-6 3" stroke="var(--pen-red)" fill="var(--pen-red)" stroke-width="1.3"/></svg>${esc(t("lg_reset"))}</span>`;
+}
+
+function openAppEntry() {
+  const m = D.quotas?.claude?.manual || {}, box = $("app_entry");
+  box.innerHTML = `<h3>${esc(t("app_title"))}</h3><p>${esc(t("app_help"))}</p>
+    <label>${esc(t("app_5h"))}<input type="number" min="0" max="100" id="ae5" value="${m.five_hour ?? ""}"></label>
+    <label>${esc(t("app_week"))}<input type="number" min="0" max="100" id="aew" value="${m.weekly ?? ""}"></label>
+    <label>${esc(t("app_model"))}<input type="number" min="0" max="100" id="aem" value="${m.weekly_model ?? ""}"></label>
+    <div class="dlg-actions" style="margin-top:12px"><button class="btn" id="ae_no">${esc(t("cancel"))}</button><button class="btn primary" id="ae_yes">${esc(t("save"))}</button></div>`;
+  box.style.left = "16px"; box.style.top = "40px"; box.classList.add("on");
+  $("ae5").focus();
+  $("ae_no").onclick = () => box.classList.remove("on");
+  $("ae_yes").onclick = () => { box.classList.remove("on"); act("/api/claude", {five_hour: $("ae5").value, weekly: $("aew").value, weekly_model: $("aem").value}); };
+  box.onkeydown = e => { if (e.key === "Escape") box.classList.remove("on"); };
+}
+
+// ---------- notes and today ----------
+function renderNotes(v) {
   const ag = Object.fromEntries(v.agents.map(a => [a.name, a]));
-  const list = allAdvice ? v.advice : v.advice.slice(0, 5);
-  $("advice").innerHTML = (v.advice.length ? list.map((o, i) => {
-    let b = "";
-    if (o.action?.type === "model") b = `<button data-o="${i}">Switch to ${esc(MNAME(o.action.model))}${ag[o.action.agent]?.provider === "claude" ? " / " + esc(o.action.thinking) : ""}</button>`;
-    if (o.action?.type === "cancel") b = `<button class="danger" data-o="${i}">Cancel run</button>`;
-    if (o.action?.type === "stop_file") b = `<button data-o="${i}">Start it</button>`;
-    return `<div class="adv"><div class="lvl ${o.level}"></div><div><div>${esc(o.text)}</div><div class="why">${esc(o.why)}</div></div><div>${b}</div></div>`;
-  }).join("") : `<div class="empty">Nothing to flag right now.</div>`)
-    + (v.advice.length > 5 ? `<div style="margin-top:8px"><button class="link" id="adv_all">${allAdvice ? "Show less" : `Show all (${v.advice.length})`}</button></div>` : "");
-  $("advice").querySelectorAll("button[data-o]").forEach(b => b.onclick = () => {
+  const fmt = (rule, p) => {
+    const P = {...p};
+    for (const k of ["usd", "total", "cap", "per_hour"]) if (P[k] != null) P[k] = usd(P[k]);
+    if (P.context != null) P.context = tok(P.context);
+    for (const k of ["at", "end"]) if (P[k]) P[k] = hm(P[k]);
+    if (P.reset) P.reset = dayHm(P.reset);
+    if (P.window) P.window = WIN(P.window);
+    if (P.group) P.group = GROUP(P.group);
+    if (Array.isArray(P.allowed)) P.allowed = P.allowed.join(", ");
+    if (Array.isArray(P.reasons)) P.reasons = P.reasons.join(", ");
+    if (rule === "agy_empty") P.agents = P.agents?.length ? (I18N[LANG].adv.agy_empty_agents || I18N.en.adv.agy_empty_agents).replace("{a}", P.agents.join(", ")) : "";
+    if (!P.issue) P.issue = t("no_issue");
+    const tpl = (I18N[LANG].adv[rule] || I18N.en.adv[rule] || [rule, ""]);
+    return tpl.map(s => s.replace(/\{(\w+)\}/g, (_, x) => P[x] ?? ""));
+  };
+  const list = allNotes ? v.advice : v.advice.slice(0, 6);
+  $("notes").innerHTML = v.advice.length ? list.map((o, i) => {
+    const [a, b] = fmt(o.rule, o.p);
+    let btn = "";
+    if (o.action?.type === "model") btn = `<button class="btn" data-o="${i}">${esc(t("switch_to", {m: MNAME(o.action.model) + (ag[o.action.agent]?.provider === "claude" ? " / " + o.action.thinking : "")}))}</button>`;
+    if (o.action?.type === "cancel") btn = `<button class="btn danger" data-o="${i}">${esc(t("cancel_run_long"))}</button>`;
+    if (o.action?.type === "stop_file") btn = `<button class="btn" data-o="${i}">${esc(t("start_it"))}</button>`;
+    return `<li>${levelIcon(o.level)}<div class="t">${esc(a)}</div><div class="act">${btn}</div><div class="w">${esc(b)}</div></li>`;
+  }).join("") : `<li><span></span><div class="muted">${esc(t("nothing"))}</div></li>`;
+  $("notes_more").innerHTML = v.advice.length > 6 ? `<button class="link" id="notes_all">${esc(allNotes ? t("show_less") : t("show_all", {n: v.advice.length}))}</button>` : "";
+  if ($("notes_all")) $("notes_all").onclick = () => { allNotes = !allNotes; renderNotes(v); };
+  $("notes").querySelectorAll("button[data-o]").forEach(b => b.onclick = () => {
     const e = v.advice[+b.dataset.o].action;
     if (e.type === "model") confirmModel(ag[e.agent], e.model, ag[e.agent].provider === "claude" ? e.thinking : ag[e.agent].thinking);
     if (e.type === "cancel") confirmCancel(e.run, e.label);
     if (e.type === "stop_file") confirmSwitch(e.i, e.stop);
   });
-  if ($("adv_all")) $("adv_all").onclick = () => { allAdvice = !allAdvice; renderAdvice(v); };
+}
+
+function renderFacts(v) {
+  const days = v.daily.filter(d => d.day < v.today).slice(-7), avg = days.length ? days.reduce((a, d) => a + d.usd, 0) / days.length : 0;
+  const today = v.today_ccusage ?? 0, w = v.window, wk = v.weekly.at(-1), pw = v.weekly.at(-2), tt = v.token_types?.today;
+  const rel = avg ? (today >= avg ? t("above", {p: Math.round((today - avg) / avg * 100)}) : t("below", {p: Math.round((avg - today) / avg * 100)})) : "";
+  const tSum = tt ? tt.tokens.reduce((a, b) => a + b, 0) : 0, cSum = tt ? tt.usd.reduce((a, b) => a + b, 0) : 0;
+  const f = (l, val, d) => `<div class="fact"><div class="l">${esc(l)}</div><div class="v">${esc(val)}</div><div class="d">${esc(d)}</div></div>`;
+  $("facts").innerHTML = f(t("f_today"), usd(today), t("f_today_d", {a: usd(avg), p: rel}))
+    + f(t("f_window"), w ? usd(w.usd) : "–", w ? t("f_window_d", {s: hm(w.start), r: w.full_before_end ? t("fills_at", {t: hm(w.full_at)}) : t("safe_until", {e: hm(w.end)})}) : t("no_window"))
+    + f(t("f_week"), usd(wk?.usd), t("f_week_d", {v: usd(pw?.usd)}))
+    + f(t("f_cache"), tt ? usd(tt.usd[3]) : "–", tt && tSum ? t("f_cache_d", {p: pc(tt.tokens[3] / tSum * 100), c: pc(tt.usd[3] / cSum * 100)}) : "");
+  const inst = v.quotas?.installed || {}, miss = [];
+  if (inst.opencode) miss.push("OpenCode Zen");
+  if (inst.gemini) miss.push("Gemini CLI");
+  $("unreadable").innerHTML = (miss.length ? esc(t(miss.length > 1 ? "unreadable" : "unreadable1", {x: miss.join(LANG === "tr" ? " ve " : " and ")})) + " " : "") + (inst.ccusage === false ? esc(t("no_ccusage")) : "");
 }
 
 // ---------- filters ----------
-const match = s => !F.search || String(s).toLowerCase().includes(F.search.toLowerCase());
-const sessions = v => v.sessions.filter(r => F.kinds.includes(r.kind) && r[F.span] > 0.005
-  && match([r.title, r.first_message, r.label, r.agent, r.issue, r.issue_title, r.project, r.id].join(" ")));
-function renderFilters(v) {
+const match = s => !F.search || String(s).toLocaleLowerCase(loc()).includes(F.search.toLocaleLowerCase(loc()));
+const SPANS = ["today", "window", "week"];
+const sessions = v => v.sessions.filter(r => F.kinds.includes(r.kind) && r[F.span] > 0.005 && match([r.title, r.first_message, r.agent, r.issue, r.issue_title, r.project, r.task, r.id].join(" ")));
+const nameOf = r => r.title || (r.agent ? `${r.agent} · ${r.issue || t("no_issue")}${r.issue_title ? " — " + r.issue_title : ""}` : r.task ? `${t("k_scheduled")}: ${r.task}` : r.first_message) || r.id.slice(0, 8);
+function renderControls(v) {
   if (!v.multica && (F.tab === "runs" || F.tab === "agents")) F.tab = "spend";
-  document.querySelectorAll("[data-multica]").forEach(el => el.style.display = v.multica ? "" : "none");
-  $("span").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === F.span));
-  const kinds = Object.keys(KIND).filter(k => v.multica || k !== "multica");
-  $("kinds").innerHTML = kinds.map(k => `<button class="chip ${F.kinds.includes(k) ? "" : "off"}" data-k="${k}"><i class="dot" style="background:var(${KVAR[k]})"></i>${KIND[k]}</button>`).join("");
-  $("kinds").querySelectorAll("button").forEach(b => b.onclick = () => {
-    const k = b.dataset.k; F.kinds = F.kinds.includes(k) ? F.kinds.filter(x => x !== k) : [...F.kinds, k]; save(); draw();
-  });
-  $("search").value = F.search;
-  $("tabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.t === F.tab));
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "t-" + F.tab));
-  $("kinds").style.display = F.tab === "runs" || F.tab === "agents" ? "none" : "flex";
-  $("span").style.display = F.tab === "agents" || F.tab === "runs" ? "none" : "";
+  document.querySelectorAll("[data-multica]").forEach(e => e.style.display = v.multica ? "" : "none");
+  $("tabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.t === F.tab));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("on", p.id === "p-" + F.tab));
+  $("span").innerHTML = SPANS.map(s => `<button data-v="${s}" aria-pressed="${s === F.span}">${esc(t("span_" + s))}</button>`).join("");
+  $("span").querySelectorAll("button").forEach(b => b.onclick = () => { F.span = b.dataset.v; save(); draw(); });
+  const kinds = KINDS.filter(k => v.multica || k !== "multica");
+  $("kinds").innerHTML = kinds.map(k => `<button class="chip" data-k="${k}" aria-pressed="${F.kinds.includes(k)}"><i class="sw" style="background:var(${KVAR(k)})"></i>${esc(t("k_" + k))}</button>`).join("");
+  $("kinds").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; F.kinds = F.kinds.includes(k) ? F.kinds.filter(x => x !== k) : [...F.kinds, k]; save(); draw(); });
+  const sessionTabs = F.tab === "spend" || F.tab === "sessions";
+  $("span").style.display = sessionTabs ? "" : "none"; $("kinds").style.display = sessionTabs ? "" : "none";
+  $("search").placeholder = t("search");
+  if (document.activeElement !== $("search")) $("search").value = F.search;
 }
-$("span").querySelectorAll("button").forEach(b => b.onclick = () => { F.span = b.dataset.v; save(); draw(); });
 $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { F.tab = b.dataset.t; save(); draw(); });
 $("search").oninput = e => { F.search = e.target.value; save(); draw(); };
-$("rstatus").querySelectorAll("button").forEach(b => b.onclick = () => { F.rstatus = b.dataset.v; save(); draw(); });
-$("ragent").onchange = e => { F.ragent = e.target.value; save(); draw(); };
 
-function table(id, cols, rows, def, limit = 60) {
-  const s = F.sort[id] || def, col = cols.find(k => k.k === s.k) || cols[0];
-  const sorted = [...rows].sort((a, b) => { const x = col.v ? col.v(a) : a[col.k], y = col.v ? col.v(b) : b[col.k]; return (x > y ? 1 : x < y ? -1 : 0) * (s.dir || -1); });
-  $(id).innerHTML = rows.length ? `<table><tr>${cols.map(k => `<th class="${k.r ? "r" : ""}" ${k.k ? `data-s="${k.k}"` : ""}>${esc(k.t)}${s.k === k.k ? (s.dir === 1 ? " ↑" : " ↓") : ""}</th>`).join("")}</tr>
-    ${sorted.slice(0, limit).map(r => `<tr>${cols.map(k => `<td class="${k.r ? "r" : ""}">${k.h(r)}</td>`).join("")}</tr>`).join("")}</table>
-    ${rows.length > limit ? `<div class="muted small" style="margin-top:6px">Showing ${limit} of ${rows.length}; search to narrow it down.</div>` : ""}`
-    : `<div class="empty">Nothing matches these filters.</div>`;
-  $(id).querySelectorAll("th[data-s]").forEach(th => th.onclick = () => { const k = th.dataset.s; F.sort[id] = {k, dir: s.k === k ? -(s.dir || -1) : -1}; save(); draw(); });
+// ---------- generic pieces ----------
+function ranks(id, items, {color = () => "--ink-2", sub = () => "", fmt = usd, limit = 8} = {}) {
+  const max = Math.max(1e-9, ...items.map(i => i.v));
+  const shown = items.slice(0, limit), rest = items.slice(limit);
+  if (rest.length) shown.push({n: t("other") + ` (${rest.length})`, v: rest.reduce((a, i) => a + i.v, 0), other: true});
+  $(id).innerHTML = items.length ? `<div class="ranks">${shown.map(i => `<div class="rank" title="${esc(i.n)}"><div class="name">${esc(i.n)}${sub(i) ? `<small>${esc(sub(i))}</small>` : ""}</div><div class="val">${fmt(i.v)}</div>
+    <div class="track">${(i.parts || [{v: i.v, c: i.other ? "--rule-2" : color(i)}]).map(p => `<span style="width:${p.v / max * 100}%;background:var(${p.c})" title="${esc(p.n || "")}"></span>`).join("")}</div></div>`).join("")}</div>`
+    : `<div class="empty">${esc(t("nothing_match"))}</div>`;
 }
+function columns(id, items, {h = 170, cap, label, title, legend}) {
+  const host = $(id), W = host.clientWidth || 500, PL = 40, PB = 22, PT = 10;
+  const max = Math.max(cap || 0, ...items.map(i => i.total), 1) * 1.08;
+  const n = items.length, slot = (W - PL) / Math.max(n, 1), bw = Math.min(24, slot * .62);
+  const y = val => PT + (h - PT - PB) * (1 - val / max);
+  const svg = el("svg", {class: "chart", viewBox: `0 0 ${W} ${h}`, height: h});
+  const step = niceStep(max);
+  for (let tk = 0; tk <= max; tk += step) { el("line", {x1: PL, x2: W, y1: y(tk), y2: y(tk), class: "gl"}, svg); txt(svg, PL - 6, y(tk) + 3.5, usd0(tk), {"text-anchor": "end", class: "mono"}); }
+  if (cap) { el("line", {x1: PL, x2: W, y1: y(cap), y2: y(cap), stroke: cssv("--pen-red"), "stroke-width": 1.5}, svg); txt(svg, W, y(cap) - 5, `${t("cap")} ${usd0(cap)}`, {"text-anchor": "end", fill: cssv("--pen-red")}); }
+  const tip = host.querySelector(".tip") || Object.assign(document.createElement("div"), {className: "tip"});
+  items.forEach((it, i) => {
+    const cx = PL + slot * i + slot / 2;
+    let acc = 0;
+    const segs = it.parts.filter(p => p.v > 0);
+    segs.forEach((p, k) => {
+      const y1 = y(acc + p.v), y0 = y(acc); acc += p.v;
+      const top = k === segs.length - 1, hgt = Math.max(0, y0 - y1 - (k ? 2 : 0));
+      el("path", {d: top ? roundTop(cx - bw / 2, y1, bw, hgt, Math.min(4, hgt)) : `M${cx - bw / 2} ${y1}h${bw}v${hgt}h${-bw}Z`, fill: `var(${p.c})`}, svg);
+    });
+    if (label(it, i)) txt(svg, cx, h - 6, label(it, i), {"text-anchor": "middle", class: "mono", "font-size": 10.5});
+    const hitR = el("rect", {x: cx - slot / 2, y: 0, width: slot, height: h - PB, fill: "transparent"}, svg);
+    hitR.addEventListener("mousemove", e => { const r = host.getBoundingClientRect(); tip.innerHTML = title(it); tip.style.left = Math.min(e.clientX - r.left + 12, r.width - 200) + "px"; tip.style.top = "0px"; tip.classList.add("on"); });
+    hitR.addEventListener("mouseleave", () => tip.classList.remove("on"));
+  });
+  host.innerHTML = ""; host.appendChild(svg); host.appendChild(tip);
+  if (legend) host.insertAdjacentHTML("beforeend", legend);
+}
+const roundTop = (x0, y0, w, h, r) => `M${x0} ${y0 + h}V${y0 + r}q0 ${-r} ${r} ${-r}h${w - 2 * r}q${r} 0 ${r} ${r}V${y0 + h}Z`;
+function niceStep(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); const n = raw / p; return (n < 1.5 ? 1 : n < 3.5 ? 2.5 : n < 7.5 ? 5 : 10) * p; }
+const tipRows = (head, rows) => `<div style="margin-bottom:4px"><b>${esc(head)}</b></div>` + rows.map(([a, b]) => `<div class="row"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("");
+const legendHtml = items => `<div class="legend">${items.map(i => `<span><i class="sw" style="background:var(${i.c})"></i>${esc(i.n)}${i.v != null ? ` <b>${esc(i.v)}</b>` : ""}</span>`).join("")}</div>`;
 
 // ---------- spending ----------
-function stack(parts) {
-  const t = parts.reduce((a, p) => a + p.v, 0) || 1;
-  return `<div class="stack">${parts.filter(p => p.v > 0).map(p => `<span title="${esc(p.n)}: ${usd(p.v)}" style="width:${100 * p.v / t}%;background:var(${p.c})"></span>`).join("")}</div>`;
-}
-const legend = parts => `<div class="legend">${parts.filter(p => p.v > 0).map(p => `<span><i class="dot" style="background:var(${p.c})"></i>${esc(p.n)} ${usd(p.v)}</span>`).join("")}</div>`;
-const nameOf = r => r.title || (r.agent ? `${r.agent} · ${r.issue || "no issue"}${r.issue_title ? " — " + r.issue_title : ""}` : r.first_message) || r.id.slice(0, 8);
-function bars(items, label, title) {
-  const max = Math.max(1, ...items.map(x => x.total));
-  return `<div class="chart">${items.map(x => `<div class="col" title="${esc(title(x))}" style="height:${100 * x.total / max}%">${x.parts.map(p => `<span style="height:${100 * p.v / (x.total || 1)}%;background:var(${p.c})"></span>`).join("")}</div>`).join("")}</div>
-    <div class="xl">${items.map(x => `<span>${esc(label(x))}</span>`).join("")}</div>`;
-}
 function renderSpend(v) {
-  const ss = sessions(v), f = F.span, w = v.window;
-  const total = ss.reduce((a, r) => a + r[f], 0);
-  const kinds = Object.keys(KIND).map(k => ({n: KIND[k], c: KVAR[k], v: ss.filter(r => r.kind === k).reduce((a, r) => a + r[f], 0)}));
-  $("who").innerHTML = `<div class="sum"><div><b>${usd(total)}</b><span>${SPAN[f]} · filtered</span></div><div><b>${ss.length}</b><span>sessions</span></div>
-      ${f === "today" ? `<div><b>${usd(v.today_ccusage)}</b><span>ccusage today (Claude)</span></div>` : ""}
-      ${f === "window" && w ? `<div><b>${hm(w.start)}–${hm(w.end)}</b><span>open window</span></div>` : ""}</div>
-    ${stack(kinds)}${legend(kinds)}<h3>Top spenders</h3>
-    ${ss.slice().sort((a, b) => b[f] - a[f]).slice(0, 6).map(r => `<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0" class="small">
-      <span class="trunc"><i class="dot" style="background:var(${KVAR[r.kind]})"></i>${esc(nameOf(r))}</span><b class="num">${usd(r[f])}</b></div>`).join("")}
-    <div class="note small">Kinds: a transcript under a <code>multica-workspaces</code> folder is a Multica run (tied to its agent and issue by the run id in the folder name);
-    a first message starting with <code>&lt;scheduled-task</code> is a scheduled task; a session started by another session is a side session; an interactive session open for more than 24 hours is long-running.</div>`;
+  const ss = sessions(v), f = F.span, total = ss.reduce((a, r) => a + r[f], 0);
+  const kinds = KINDS.filter(k => F.kinds.includes(k)).map(k => ({n: t("k_" + k), c: KVAR(k), v: ss.filter(r => r.kind === k).reduce((a, r) => a + r[f], 0)}));
+  $("who_aside").textContent = t("total_f", {v: usd(total)}) + " · " + t("sessions_n", {n: ss.length});
+  const top = ss.slice().sort((a, b) => b[f] - a[f]);
+  $("who").innerHTML = `<div class="stackbar">${kinds.filter(k => k.v > 0).map(k => `<span style="flex:${k.v};background:var(${k.c})" title="${esc(k.n)} ${usd(k.v)}"></span>`).join("")}</div>
+    ${legendHtml(kinds.filter(k => k.v > 0).map(k => ({...k, v: usd(k.v)})))}<div style="margin-top:18px" id="who_top"></div>`;
+  ranks("who_top", top.map(r => ({n: nameOf(r), v: r[f], kind: r.kind, sub: r.project})), {color: i => KVAR(i.kind), limit: 7});
 
-  const md = f === "today" ? Object.entries(v.models_today).map(([m, x]) => ({n: MNAME(m), v: x.usd, c: MVAR(m)}))
-    : f === "week" ? Object.entries(v.weekly.at(-1)?.models || {}).map(([m, x]) => ({n: MNAME(m), v: x, c: MVAR(m)}))
-    : (w?.models || []).map(m => ({n: MNAME(m), v: 0, c: MVAR(m)}));
-  md.sort((a, b) => b.v - a.v);
-  const mt = md.reduce((a, x) => a + x.v, 0);
-  $("models").innerHTML = f === "window"
-    ? `<div class="muted small">Models in this window: ${md.map(m => `<i class="dot" style="background:var(${m.c})"></i>${esc(m.n)}`).join(" ")}. A per-model split exists only per day and per week.</div>`
-    : `${stack(md)}<table style="margin-top:8px"><tr><th>Model</th><th class="r">$</th><th class="r">share</th></tr>
-      ${md.map(m => `<tr><td><i class="dot" style="background:var(${m.c})"></i>${esc(m.n)}</td><td class="r">${usd(m.v)}</td><td class="r">${pct(m.v, mt)}%</td></tr>`).join("")}</table>
-      <div class="muted small" style="margin-top:6px">${f === "week" ? "Calendar week. " : ""}Other tools today: ${tok(v.daily.at(-1)?.other_tokens)} tokens (not part of the Claude quota).</div>`;
+  // heatmap: 7 local days × 24 hours
+  const host = $("heat"), W = host.clientWidth || 520, PL = 46, PT = 16, rows = 7, cw = (W - PL) / 24, ch = 22;
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6 + i); return d; });
+  const cell = {};
+  for (const [h, kinds_] of Object.entries(v.hourly || {})) {
+    const d = new Date(h + ":00:00Z"), key = d.toDateString() + "|" + d.getHours();
+    cell[key] = (cell[key] || 0) + Object.entries(kinds_).filter(([k]) => F.kinds.includes(k)).reduce((a, [, x]) => a + x, 0);
+  }
+  const vals = Object.values(cell), hmax = Math.max(1e-9, ...vals);
+  const svg = el("svg", {class: "chart", viewBox: `0 0 ${W} ${PT + rows * ch + 22}`, height: PT + rows * ch + 22});
+  const tip = Object.assign(document.createElement("div"), {className: "tip"});
+  for (let hh = 0; hh < 24; hh += 3) txt(svg, PL + hh * cw + cw / 2, 10, String(hh).padStart(2, "0"), {"text-anchor": "middle", class: "mono", "font-size": 10});
+  days.forEach((d, r) => {
+    txt(svg, PL - 8, PT + r * ch + ch / 2 + 4, d.toLocaleDateString(loc(), {weekday: "short"}), {"text-anchor": "end"});
+    for (let hh = 0; hh < 24; hh++) {
+      const val = cell[d.toDateString() + "|" + hh] || 0, lvl = val <= 0 ? 0 : Math.min(5, 1 + Math.floor(Math.sqrt(val / hmax) * 5));
+      const rc = el("rect", {x: PL + hh * cw + 1, y: PT + r * ch + 1, width: cw - 2, height: ch - 2, rx: 2, fill: `var(--heat-${lvl})`}, svg);
+      rc.addEventListener("mousemove", e => { const b = host.getBoundingClientRect(); tip.innerHTML = tipRows(`${d.toLocaleDateString(loc(), {weekday: "long", day: "numeric", month: "short"})} ${String(hh).padStart(2, "0")}:00`, [["Claude", usd(val)]]); tip.style.left = Math.min(e.clientX - b.left + 12, b.width - 180) + "px"; tip.style.top = (e.clientY - b.top + 12) + "px"; tip.classList.add("on"); });
+      rc.addEventListener("mouseleave", () => tip.classList.remove("on"));
+    }
+  });
+  const ly = PT + rows * ch + 14;
+  txt(svg, PL, ly, "$0", {class: "mono", "font-size": 10});
+  for (let i = 1; i <= 5; i++) el("rect", {x: PL + 24 + (i - 1) * 16, y: ly - 9, width: 14, height: 10, rx: 2, fill: `var(--heat-${i})`}, svg);
+  txt(svg, PL + 24 + 5 * 16 + 4, ly, usd(hmax), {class: "mono", "font-size": 10});
+  host.innerHTML = ""; host.appendChild(svg); host.appendChild(tip);
 
-  const mu = ss.filter(r => r.kind === "multica");
-  const group = key => Object.values(mu.reduce((acc, r) => {
-    const k = r[key] || "–", g = acc[k] ||= {name: k, usd: 0, sessions: 0, agents: new Set(), title: r.issue_title};
-    g.usd += r[f]; g.sessions += 1; g.agents.add(r.agent); return acc; }, {}));
-  table("by_agent", [{t: "Agent", k: "name", h: r => esc(r.name)}, {t: SPAN[f], k: "usd", r: 1, h: r => usd(r.usd)}, {t: "sessions", k: "sessions", r: 1, h: r => r.sessions}], group("agent"), {k: "usd"}, 20);
-  table("by_issue", [
-    {t: "Issue", k: "name", h: r => `<b>${esc(r.name)}</b> <span class="muted small">${esc(r.title || "")}</span><div class="muted small">${esc([...r.agents].join(", "))}</div>`},
-    {t: SPAN[f], k: "usd", r: 1, h: r => usd(r.usd)}, {t: "sessions", k: "sessions", r: 1, h: r => r.sessions}], group("issue").filter(g => g.name !== "–"), {k: "usd"}, 15);
+  // by day and kind
+  const byDay = days.map(d => { const parts = {}; for (const [h, kk] of Object.entries(v.hourly || {})) { const hd = new Date(h + ":00:00Z"); if (hd.toDateString() === d.toDateString()) for (const [k, x] of Object.entries(kk)) parts[k] = (parts[k] || 0) + x; } return {d, parts}; });
+  const ks = KINDS.filter(k => F.kinds.includes(k));
+  columns("by_day", byDay.map(b => ({total: ks.reduce((a, k) => a + (b.parts[k] || 0), 0), d: b.d, parts: ks.map(k => ({v: b.parts[k] || 0, c: KVAR(k), n: t("k_" + k)}))})),
+    {label: it => it.d.toLocaleDateString(loc(), {weekday: "short"}), title: it => tipRows(it.d.toLocaleDateString(loc(), {weekday: "long", day: "numeric", month: "short"}), [...it.parts.filter(p => p.v > 0).map(p => [p.n, usd(p.v)]), ["Σ", usd(it.total)]]),
+     legend: legendHtml(ks.map(k => ({n: t("k_" + k), c: KVAR(k)})))});
 
-  const d = v.daily.map(x => ({...x, total: x.usd, parts: Object.entries(x.models).filter(([, c]) => c > 0).map(([m, c]) => ({v: c, c: MVAR(m), n: MNAME(m)}))}));
-  const all = [...new Set(v.daily.flatMap(x => Object.keys(x.models).filter(m => x.models[m] > 0)))];
-  $("daily").innerHTML = bars(d, x => x.day.slice(8), x => `${x.day}: ${usd(x.usd)}\n` + x.parts.map(p => `${p.n} ${usd(p.v)}`).join("\n"))
-    + `<div class="legend">${all.map(m => `<span><i class="dot" style="background:var(${MVAR(m)})"></i>${esc(MNAME(m))}</span>`).join("")}</div>`;
-  const ws = v.recent_windows.map(b => ({...b, total: b.usd, parts: [{v: b.usd, c: b.active ? "--red" : "--blue"}]}));
-  $("windows").innerHTML = bars(ws, x => hm(x.start), x => `${dayHm(x.start)} – ${hm(x.end)}: ${usd(x.usd)}${x.active ? " (open)" : ""}`)
-    + `<div class="muted small">Red: the open window. Estimated cap ${usd(w?.cap)}.</div>`;
-  $("weekly").innerHTML = `<table><tr><th>Week of</th><th class="r">$</th><th class="r">tokens</th></tr>${v.weekly.slice(-4).reverse().map(x => `<tr><td>${esc(x.week)}</td><td class="r">${usd(x.usd)}</td><td class="r">${tok(x.tokens)}</td></tr>`).join("")}</table>`;
+  // models by day (ccusage)
+  const allM = [...new Set(v.daily.flatMap(d => Object.keys(d.models).filter(m => d.models[m] > 0)))];
+  columns("models_daily", v.daily.map(d => ({total: d.usd, day: d.day, parts: allM.map(m => ({v: d.models[m] || 0, c: MVAR(m), n: MNAME(m)}))})),
+    {label: (it, i) => i % 3 === 0 || i === v.daily.length - 1 ? it.day.slice(8) : "", title: it => tipRows(it.day, [...it.parts.filter(p => p.v > 0).map(p => [p.n, usd(p.v)]), ["Σ", usd(it.total)]]),
+     legend: legendHtml(allM.map(m => ({n: MNAME(m), c: MVAR(m)})))});
+
+  // token anatomy
+  const span = f === "week" ? "week" : "today", tt = v.token_types?.[span];
+  if (tt) {
+    const names = ["t_input", "t_output", "t_write", "t_read"], cols = ["--t-input", "--t-output", "--t-write", "--t-read"];
+    const ts_ = tt.tokens.reduce((a, b) => a + b, 0) || 1, cs = tt.usd.reduce((a, b) => a + b, 0) || 1;
+    const bar = (arr, sum) => `<div class="stackbar" style="height:18px">${arr.map((x, i) => x > 0 ? `<span style="flex:${x};background:var(${cols[i]})" title="${esc(t(names[i]))} ${pc(x / sum * 100)}"></span>` : "").join("")}</div>`;
+    $("anatomy_aside").textContent = t("span_" + span);
+    $("anatomy").innerHTML = `<div class="small muted" style="margin-bottom:5px">${esc(t("tokens"))} · <span class="mono">${tok(ts_)}</span></div>${bar(tt.tokens, ts_)}
+      <div class="small muted" style="margin:14px 0 5px">${esc(t("cost"))} · <span class="mono">${usd(cs)}</span></div>${bar(tt.usd, cs)}
+      ${legendHtml(names.map((n, i) => ({n: t(n), c: cols[i], v: `${pc(tt.tokens[i] / ts_ * 100)} / ${pc(tt.usd[i] / cs * 100)}`})))}
+      <p class="insight">${t("anatomy_insight", {rt: pc(tt.tokens[3] / ts_ * 100), rc: pc(tt.usd[3] / cs * 100), ot: pc(tt.tokens[1] / ts_ * 100), oc: pc(tt.usd[1] / cs * 100)})}</p>`;
+  }
+
+  // windows against the cap
+  columns("windows", v.recent_windows.map(b => ({total: b.usd, b, parts: [{v: b.usd, c: b.active ? "--pen-blue" : "--ink-3"}]})),
+    {cap: v.window?.cap, label: it => hm(it.b.start), title: it => tipRows(`${dayHm(it.b.start)} – ${hm(it.b.end || it.b.close)}`, [["Claude", usd(it.total)]])});
+
+  // projects, agents, issues
+  const group = (key, filt = () => true) => Object.values(ss.filter(filt).reduce((acc, r) => { const k = r[key] || "–"; const g = acc[k] ||= {n: k, v: 0, count: 0, kind: r.kind, title: r.issue_title, agents: new Set()}; g.v += r[f]; g.count++; g.agents.add(r.agent); return acc; }, {})).sort((a, b) => b.v - a.v);
+  const pr = group("project");
+  $("projects_aside").textContent = t("total_f", {v: usd(pr.reduce((a, i) => a + i.v, 0))});
+  ranks("projects", pr, {sub: i => i.count ? t("sessions_n", {n: i.count}) : "", limit: 9});
+  const ag = group("agent", r => r.kind === "multica");
+  $("agents_aside").textContent = usd(ag.reduce((a, i) => a + i.v, 0));
+  ranks("agents_spend", ag, {color: () => KVAR("multica"), sub: i => i.count ? t("sessions_n", {n: i.count}) : "", limit: 9});
+  const is = group("issue", r => r.kind === "multica" && r.issue);
+  $("issues_aside").textContent = usd(is.reduce((a, i) => a + i.v, 0));
+  ranks("issues", is.map(i => ({...i, n: `${i.n} ${i.title || ""}`})), {color: () => KVAR("multica"), sub: i => i.agents ? [...i.agents].join(", ") : "", limit: 9});
 }
 
-// ---------- sessions, runs, agents ----------
+// ---------- tables ----------
+function table(id, cols, rows, def, limit = 80) {
+  const s = F.sort[id] || def, col = cols.find(k => k.k === s.k) || cols[0];
+  const sorted = [...rows].sort((a, b) => { const x = col.v ? col.v(a) : a[col.k], y = col.v ? col.v(b) : b[col.k]; return (x > y ? 1 : x < y ? -1 : 0) * (s.dir || -1); });
+  $(id).innerHTML = rows.length ? `<table><thead><tr>${cols.map(k => `<th class="${k.r ? "r" : ""}" ${k.k ? `data-s="${k.k}"` : ""} ${s.k === k.k ? `aria-sort="${s.dir === 1 ? "ascending" : "descending"}"` : ""}>${esc(k.t)}${s.k === k.k ? (s.dir === 1 ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead>
+    <tbody>${sorted.slice(0, limit).map(r => `<tr>${cols.map(k => `<td class="${k.r ? "r" : ""}">${k.h(r)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    ${rows.length > limit ? `<div class="table-foot">${esc(t("showing", {a: limit, b: rows.length}))}</div>` : ""}`
+    : `<div class="empty">${esc(t("nothing_match"))}</div>`;
+  $(id).querySelectorAll("th[data-s]").forEach(th => th.onclick = () => { const k = th.dataset.s; F.sort[id] = {k, dir: s.k === k ? -(s.dir || -1) : -1}; save(); draw(); });
+}
 function renderSessions(v) {
-  const f = F.span;
+  const f = F.span, rows = sessions(v), max = Math.max(1e-9, ...rows.map(r => r[f]));
   table("sessions", [
-    {t: "Session", k: "title", v: nameOf, h: r => `<div class="trunc" title="${esc(r.first_message)}">${esc(nameOf(r))}</div><div class="muted small">${esc(r.project)} · ${esc(r.id.slice(0, 8))}${r.model ? " · " + esc(MNAME(r.model)) : ""}</div>`},
-    {t: "Kind", k: "kind", h: r => `<span class="pill"><i class="dot" style="background:var(${KVAR[r.kind]})"></i>${esc(KIND[r.kind])}</span>`},
-    {t: SPAN[f], k: f, r: 1, h: r => `<b>${usd(r[f])}</b>`},
-    ...(f === "week" ? [] : [{t: "7 days", k: "week", r: 1, h: r => usd(r.week)}]),
-    {t: "context", k: "context", r: 1, h: r => `<span ${r.context > 400000 ? 'style="color:var(--red)"' : ""}>${tok(r.context)}</span>`},
-    {t: "last", k: "last", r: 1, h: r => `<span class="muted small">${esc(dayHm(r.last))}</span>`},
-  ], sessions(v), {k: f}, 60);
+    {t: t("s_session"), k: "title", v: nameOf, h: r => `<div class="cell-title" title="${esc(r.first_message)}">${esc(nameOf(r))}</div><div class="cell-sub">${esc(r.project)} · <span class="mono">${esc(r.id.slice(0, 8))}</span>${r.model ? " · " + esc(MNAME(r.model)) : ""}</div>`},
+    {t: t("s_kind"), k: "kind", h: r => `<span class="tag"><i class="sw" style="background:var(${KVAR(r.kind)})"></i>${esc(t("k_" + r.kind))}</span>`},
+    {t: t("span_" + f), k: f, r: 1, h: r => `${usd(r[f])}<div class="inline-bar"><span style="width:${r[f] / max * 100}%"></span></div>`},
+    ...(f === "week" ? [] : [{t: t("s_week"), k: "week", r: 1, h: r => usd(r.week)}]),
+    {t: t("s_context"), k: "context", r: 1, h: r => `<span style="${r.context > 400000 ? "color:var(--pen-red)" : ""}">${tok(r.context)}</span>`},
+    {t: t("s_last"), k: "last", r: 1, h: r => `<span class="muted">${esc(when(r.last))}</span>`},
+  ], rows, {k: f});
 }
+const LIVE = new Set(["queued", "dispatched", "running"]);
+const ST = s => ({completed: t("r_done"), failed: t("r_failed"), cancelled: t("r_cancelled"), queued: t("r_queued"), dispatched: t("r_starting"), running: t("r_running")})[s] || s;
 function renderRuns(v) {
+  const runs = v.runs.filter(r => match([r.agent, r.issue_key, r.issue_title, r.model, r.reason].join(" ")));
+  const c = s => runs.filter(r => s === "live" ? LIVE.has(r.status) : r.status === s).length;
+  $("run_counts").innerHTML = [[runs.length, t("r_total")], [c("completed"), t("r_done")], [c("failed"), t("r_failed")], [c("live"), t("r_running")], [c("cancelled"), t("r_cancelled")]]
+    .map(([n, l], i) => `<div><div class="v" style="${i === 2 && n ? "color:var(--pen-red)" : ""}">${n}</div><div class="l">${esc(l)}</div></div>`).join("");
+  const byAgent = Object.values(runs.reduce((acc, r) => { const a = acc[r.agent] ||= {n: r.agent, v: 0, done: 0, failed: 0, other: 0}; a.v++; r.status === "completed" ? a.done++ : r.status === "failed" ? a.failed++ : a.other++; return acc; }, {})).sort((a, b) => b.v - a.v);
+  ranks("runs_by_agent", byAgent.map(a => ({...a, parts: [{v: a.done, c: "--ink-2", n: t("r_done")}, {v: a.failed, c: "--pen-red", n: t("r_failed")}, {v: a.other, c: "--rule-2", n: "…"}]})),
+    {fmt: x => String(x), sub: a => a.failed ? `${a.failed} ${t("r_failed")}` : "", limit: 10});
+  $("runs_by_agent").insertAdjacentHTML("beforeend", legendHtml([{n: t("r_done"), c: "--ink-2"}, {n: t("r_failed"), c: "--pen-red"}, {n: `${t("r_cancelled")} / ${t("r_running")}`, c: "--rule-2"}]));
+  const reasons = Object.values(runs.filter(r => r.status === "failed").reduce((acc, r) => { const k = (r.reason || "?").split(".").pop(); const a = acc[k] ||= {n: k.replace(/_/g, " "), v: 0, agents: new Set()}; a.v++; a.agents.add(r.agent); return acc; }, {})).sort((a, b) => b.v - a.v);
+  $("fail_aside").textContent = `${c("failed")} ${t("r_failed")}`;
+  ranks("fail_reasons", reasons, {color: () => "--pen-red", fmt: x => String(x), sub: a => a.agents ? [...a.agents].slice(0, 3).join(", ") + (a.agents.size > 3 ? "…" : "") : "", limit: 8});
+
   const ags = [...new Set(v.runs.map(r => r.agent))].sort();
-  $("ragent").innerHTML = `<option value="">All agents</option>` + ags.map(a => `<option ${a === F.ragent ? "selected" : ""}>${esc(a)}</option>`).join("");
-  $("rstatus").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === F.rstatus));
-  const live = new Set(["queued", "dispatched", "running"]);
-  const rows = v.runs.filter(r => (!F.ragent || r.agent === F.ragent) && (!F.rstatus || (F.rstatus === "live" ? live.has(r.status) : r.status === F.rstatus))
-    && match([r.agent, r.issue_key, r.issue_title, r.model, r.reason].join(" ")))
-    .map(r => ({...r, mins: live.has(r.status) ? (v.live.find(c => c.task_id === r.task_id)?.running_minutes ?? 0) : +r.minutes || 0}));
-  const ST = {completed: "done", failed: "failed", cancelled: "cancelled", queued: "queued", dispatched: "starting", running: "running"};
+  $("ragent").innerHTML = `<option value="">${esc(t("all_agents"))}</option>` + ags.map(a => `<option ${a === F.ragent ? "selected" : ""}>${esc(a)}</option>`).join("");
+  $("ragent").onchange = e => { F.ragent = e.target.value; save(); draw(); };
+  $("rstatus").innerHTML = [["", t("r_all")], ["live", t("r_live")], ["failed", t("r_failed_f")], ["completed", t("r_done_f")]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${k === F.rstatus}">${esc(l)}</button>`).join("");
+  $("rstatus").querySelectorAll("button").forEach(b => b.onclick = () => { F.rstatus = b.dataset.v; save(); draw(); });
+  const rows = runs.filter(r => (!F.ragent || r.agent === F.ragent) && (!F.rstatus || (F.rstatus === "live" ? LIVE.has(r.status) : r.status === F.rstatus)))
+    .map(r => ({...r, mins: LIVE.has(r.status) ? (v.live.find(x => x.task_id === r.task_id)?.running_minutes ?? 0) : +r.minutes || 0}));
   table("runs", [
-    {t: "Agent · issue", k: "agent", h: r => `${esc(r.agent)} · <b>${esc(r.issue_key || "no issue")}</b><div class="muted small trunc">${esc(r.issue_title)}</div>`},
-    {t: "Model", k: "model", h: r => `<span class="small" style="white-space:nowrap">${esc(MNAME(r.model))}</span>`},
-    {t: "Status", k: "status", h: r => `<span class="small" ${r.status === "failed" ? 'style="color:var(--red)"' : ""}>${esc(ST[r.status] || r.status)}${r.status === "failed" ? ": " + esc((r.reason || "").split(".").pop()) : ""}</span>`},
-    {t: "started", k: "created", r: 1, h: r => `<span class="muted small">${esc(dayHm(r.created))}</span>`},
-    {t: "min", k: "mins", r: 1, h: r => r.mins || "–"},
-    {t: "tokens", k: "tokens", r: 1, h: r => tok(r.tokens)},
-    {t: "", h: r => live.has(r.status) ? `<button class="danger" data-k="${esc(r.task_id)}" data-e="${esc(r.agent + " · " + (r.issue_key || ""))}">Cancel</button>` : ""},
-  ], rows, F.rstatus === "live" ? {k: "mins"} : {k: "tokens"}, 60);
+    {t: t("c_agent"), k: "agent", h: r => `${esc(r.agent)} · <b>${esc(r.issue_key || t("no_issue"))}</b><div class="cell-sub cell-title">${esc(r.issue_title)}</div>`},
+    {t: t("c_model"), k: "model", h: r => `<span class="tag"><i class="sw" style="background:var(${MVAR(r.model)})"></i>${esc(MNAME(r.model))}</span>`},
+    {t: t("c_status"), k: "status", h: r => `<span class="${r.status === "failed" ? "status-failed" : LIVE.has(r.status) ? "status-running" : ""}">${esc(ST(r.status))}${r.status === "failed" ? `<div class="cell-sub">${esc((r.reason || "").split(".").pop().replace(/_/g, " "))}</div>` : ""}</span>`},
+    {t: t("c_started"), k: "created", r: 1, h: r => `<span class="muted">${esc(when(r.created))}</span>`},
+    {t: t("c_min"), k: "mins", r: 1, h: r => r.mins || "–"},
+    {t: t("c_tokens"), k: "tokens", r: 1, h: r => tok(r.tokens)},
+    {t: "", h: r => LIVE.has(r.status) ? `<button class="btn danger" data-k="${esc(r.task_id)}" data-e="${esc(r.agent + " · " + (r.issue_key || ""))}">${esc(t("cancel_run"))}</button>` : ""},
+  ], rows, F.rstatus === "live" ? {k: "mins"} : {k: "created"});
   $("runs").querySelectorAll("button[data-k]").forEach(b => b.onclick = () => confirmCancel(b.dataset.k, b.dataset.e));
 }
 function renderAgents(v) {
   const o = v.options, list = v.agents.filter(a => match([a.name, a.model, a.runtime].join(" ")));
-  $("model_note").textContent = modelNote() + " To undo, pick the old value and apply again.";
-  $("agents").innerHTML = list.length ? `<table><tr><th>Agent</th><th>Runtime</th><th>Model</th><th>Thinking</th><th></th></tr>
+  $("model_note").textContent = modelNote();
+  $("agents").innerHTML = list.length ? `<table><thead><tr><th>${esc(t("a_agent"))}</th><th>${esc(t("a_runtime"))}</th><th>${esc(t("a_model"))}</th><th>${esc(t("a_thinking"))}</th><th></th></tr></thead><tbody>
     ${list.map(a => {
       const i = v.agents.indexOf(a), claude = a.provider === "claude", mods = claude ? o.claude : [...new Set([a.model, ...o.other])];
-      return `<tr><td>${esc(a.name)}</td><td class="small muted">${esc(a.runtime)}</td>
-        <td><select data-i="${i}" data-f="model">${mods.map(m => `<option ${m === a.model ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></td>
-        <td>${claude ? `<select data-i="${i}" data-f="thinking">${o.thinking.map(m => `<option ${m === a.thinking ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>` : `<span class="muted small">in the model name</span>`}</td>
-        <td><button data-i="${i}" disabled>Apply</button></td></tr>`;
-    }).join("")}</table>` : `<div class="empty">No agents.</div>`;
+      return `<tr><td>${esc(a.name)}</td><td class="cell-sub">${esc(a.runtime)}</td>
+        <td><select class="sel" data-i="${i}" data-f="model">${mods.map(m => `<option ${m === a.model ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></td>
+        <td>${claude ? `<select class="sel" data-i="${i}" data-f="thinking">${o.thinking.map(m => `<option ${m === a.thinking ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>` : `<span class="cell-sub">${esc(t("in_model_name"))}</span>`}</td>
+        <td><button class="btn" data-i="${i}" disabled>${esc(t("apply"))}</button></td></tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty">${esc(t("no_agents_list"))}</div>`;
   const root = $("agents");
   const pick = i => [root.querySelector(`select[data-i="${i}"][data-f="model"]`).value, root.querySelector(`select[data-i="${i}"][data-f="thinking"]`)?.value ?? v.agents[i].thinking];
-  root.querySelectorAll("select").forEach(el => el.onchange = () => {
-    const i = el.dataset.i, a = v.agents[i], [m, t] = pick(i);
-    root.querySelector(`button[data-i="${i}"]`).disabled = m === a.model && t === a.thinking; editing = true;
-  });
-  root.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { const [m, t] = pick(b.dataset.i); editing = false; confirmModel(v.agents[b.dataset.i], m, t); });
-  $("switches").innerHTML = v.stop_files.length ? v.stop_files.map((d, i) => `<div style="margin-bottom:14px">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>${esc(d.name)}</b>
-      <span class="pill" style="color:${d.stopped ? "var(--red)" : "var(--green)"}">${d.stopped ? "stopped " + dayHm(d.since) : "running"}</span>
-      <button data-sw="${i}" class="${d.stopped ? "" : "danger"}">${d.stopped ? "Start" : "Stop"}</button></div>
-      <div class="muted small">${esc(d.description)}</div>${d.log.length ? `<pre>${esc(d.log.join("\n"))}</pre>` : ""}</div>`).join("")
-    : `<div class="empty">None configured. Add <code>stop_files</code> to the config to pause a watchdog or scheduler from here.</div>`;
+  root.querySelectorAll("select").forEach(s => s.onchange = () => { const i = s.dataset.i, a = v.agents[i], [m, th] = pick(i); root.querySelector(`button[data-i="${i}"]`).disabled = m === a.model && th === a.thinking; editing = true; });
+  root.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { const [m, th] = pick(b.dataset.i); editing = false; confirmModel(v.agents[b.dataset.i], m, th); });
+  $("switches").innerHTML = v.stop_files.length ? v.stop_files.map((d, i) => `<div class="switch"><div class="switch-head"><b>${esc(d.name)}</b>
+      <span class="tag" style="color:var(${d.stopped ? "--pen-red" : "--green"})">${esc(d.stopped ? t("sw_stopped", {t: when(d.since)}) : t("sw_running"))}</span><span style="flex:1"></span>
+      <button class="btn ${d.stopped ? "" : "danger"}" data-sw="${i}">${esc(d.stopped ? t("sw_start") : t("sw_stop"))}</button></div>
+      <div class="cell-sub" style="margin-top:4px">${esc(d.description)}</div>${d.log.length ? `<pre class="log">${esc(d.log.join("\n"))}</pre>` : ""}</div>`).join("")
+    : `<div class="empty">${esc(t("no_switches"))}</div>`;
   $("switches").querySelectorAll("button[data-sw]").forEach(b => b.onclick = () => confirmSwitch(+b.dataset.sw, !v.stop_files[+b.dataset.sw].stopped));
 }
-function renderSources(v) {
-  const N = {blocks: "window", daily: "daily", scan: "sessions", quotas: "quotas", antigravity: "Antigravity", multica: "Multica", issues: "issues", agents: "agents", stop_files: "switches"};
-  const keys = Object.keys(N).filter(k => k in v.sources || (k === "antigravity" && Object.keys(v.antigravity).length) || (["multica", "issues", "agents"].includes(k) && v.multica) || ["blocks", "daily", "scan", "quotas"].includes(k));
-  const bad = keys.filter(k => v.sources[k] && !v.sources[k].ok), wait = keys.filter(k => !v.sources[k]);
-  $("updated").textContent = "updated " + hm(v.now);
-  $("sources").innerHTML = bad.length ? bad.map(k => `<span class="pill" style="color:var(--red)" title="${esc(v.sources[k].error)}">${N[k]}: not readable</span>`).join(" ")
-    : wait.length ? `<span class="pill">collecting: ${wait.map(k => N[k]).join(", ")}</span>`
-    : `<span class="pill" title="${esc(keys.map(k => N[k] + " " + hm(v.sources[k].at)).join("\n"))}">all sources fresh</span>`;
-}
 
-function draw() {
-  if (!data) return;
-  renderFilters(data);
-  for (const f of [renderSpend, renderSessions, renderRuns]) { try { f(data); } catch (e) { console.error(f.name, e); } }
-  if (!editing) try { renderAgents(data); } catch (e) { console.error(e); }
+// ---------- chrome ----------
+function renderChrome(v) {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i]").forEach(e => e.textContent = t(e.dataset.i));
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === LANG));
+  $("rec_note").textContent = t("rec_note");
+  if (!v) return;
+  $("updated").textContent = t("updated", {t: hm(v.now)});
+  const N = ["blocks", "daily", "scan", "quotas", "antigravity", "multica", "issues", "agents", "stop_files"].filter(k => k in v.sources || ["blocks", "daily", "scan", "quotas"].includes(k));
+  const bad = N.filter(k => v.sources[k] && !v.sources[k].ok), wait = N.filter(k => !v.sources[k]);
+  const h = $("health");
+  h.className = "health" + (bad.length ? " bad" : "");
+  h.title = N.map(k => `${t("src_" + k)}: ${v.sources[k] ? (v.sources[k].ok ? hm(v.sources[k].at) : v.sources[k].error) : "…"}`).join("\n");
+  h.innerHTML = `<svg width="10" height="10" aria-hidden="true">${bad.length ? `<path d="M5 1 L9.5 9 H0.5 Z" fill="var(--pen-red)"/>` : `<rect x="1.5" y="1.5" width="7" height="7" rx="1.5" fill="${wait.length ? "var(--ink-3)" : "var(--green)"}"/>`}</svg><span class="htext">${esc(bad.length ? t("not_readable", {x: bad.map(k => t("src_" + k)).join(", ")}) : wait.length ? t("collecting", {x: wait.map(k => t("src_" + k)).join(", ")}) : t("all_fresh"))}</span>`;
 }
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { LANG = b.dataset.lang; try { localStorage.setItem("quotaboard-lang", LANG); } catch (e) {} renderAll(); });
+
+function safe(f) { try { f(D); } catch (e) { console.error(f.name, e); } }
+function draw() { if (!D) return; renderControls(D); for (const f of [renderSpend, renderSessions, renderRuns]) safe(f); if (!editing) safe(renderAgents); }
+function renderAll() { renderChrome(D); if (!D) return; for (const f of [drawRecorder, renderNotes, renderFacts]) safe(f); draw(); }
 async function load() {
-  try { data = await (await fetch("/api/data", {cache: "no-store"})).json(); }
-  catch (e) { $("updated").textContent = "server unreachable (is quotaboard running?)"; return; }
-  renderSources(data);
-  for (const f of [renderQuotas, renderAdvice]) { try { f(data); } catch (e) { console.error(f.name, e); } }
-  draw();
+  try { D = await (await fetch("/api/data", {cache: "no-store"})).json(); }
+  catch (e) { $("updated").textContent = t("unreachable"); return; }
+  renderAll();
 }
+renderChrome(null);
 load();
-setInterval(() => { if (!$("confirm").open && document.activeElement?.tagName !== "INPUT") load(); }, 30000);
+setInterval(() => { if (!$("confirm").open && !$("app_entry").classList.contains("on") && document.activeElement?.tagName !== "SELECT") load(); }, 30000);
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (D) { safe(drawRecorder); draw(); } }, 150); });
 </script>
 </body>
 </html>

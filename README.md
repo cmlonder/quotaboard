@@ -6,30 +6,34 @@ It runs on your own computer, listens only on `127.0.0.1`, and needs no account 
 
 ## What you get
 
-- **Quota cards**: one card per provider with what is left and when it resets.
-  - **Claude**: an estimate of the current 5-hour window, the time it fills at the current pace, and your plan tier. Claude's own percentages are only shown in the Claude app; you can type them in and the page shows how old they are.
-  - **Antigravity**: every limit `agy -p /usage` reports (Gemini, Claude/GPT, Argon; 5-hour and weekly), for as many accounts as you configure.
+The page is laid out like a strip-chart recorder's paper: what happened is drawn in ink, the pace ahead in dashes, and limits in red pen.
+
+- **Recorder**: every quota on one shared time axis (the last 18 hours and the next 6), one lane each, with what is left and when it resets.
+  - **Claude**: the current 5-hour window drawn as spend inside each window, against an estimated cap. The dashed pace line marks the time it fills, and the plan tier is shown. Claude's own percentages are only shown in the Claude app; you can type them in and the page shows how old they are.
+  - **Antigravity**: every limit `agy -p /usage` reports (Gemini, Claude/GPT, Argon; 5-hour and weekly), for as many accounts as you configure. Readings are stored, so each lane builds a trace over time. When a quota falls steadily, the page projects when it runs out.
   - **Codex**: limits from `codex app-server` (no model call).
   - **OpenRouter**: free requests and credit for the key opencode signed in with.
-- **Advice**: plain rules, each with the reason it fired. For example:
+
+  Hover anywhere on the recorder to read every lane at that moment.
+- **Notes**: plain rules, each with the reason it fired, and an action button where one applies. For example:
   - "this session is 45% of today's spend, start a new one";
-  - "this session's context is 600k tokens";
+  - "this session carries a 600k-token context";
   - "agent X uses an expensive model";
   - "issue ABC-12 has failed 3 runs in a row";
   - "at this pace the window fills at 18:40".
-- **Spending**:
-  - who spent it: long-running, interactive, scheduled and side sessions, and Multica agents;
-  - the model split;
-  - daily and weekly trends;
-  - recent 5-hour windows.
-
-  Filter by time (today, this window, 7 days), by kind and by text. Every table sorts.
-- **[Multica](https://multica.ai) (optional)**:
-  - runs per agent and per issue;
-  - running and failed runs;
-  - cancelling a run;
-  - changing an agent's model or thinking level.
-- **Stop switches (optional)**: pause or resume a watchdog or scheduler that honours a stop file.
+- **Today**: Claude spend against the 7-day average, the open window, this week, and how much went to cache reads.
+- **Analysis**, filterable by time (today, this window, 7 days), by kind (Multica, long-running, interactive, scheduled, side session) and by text:
+  - **who spent it**, with the top sessions;
+  - **when it burns**: an hour-by-day heatmap of the last 7 days;
+  - **by day and kind**, and **models by day** (21 days);
+  - **what the tokens cost**: input, output, cache write and cache read, as share of tokens and as share of cost. Cache reads are usually almost all of the tokens and much of the cost;
+  - **5-hour windows** against the cap;
+  - **projects**, and Multica **agents** and **issues**;
+  - **sessions**: a sortable table with each session's context size;
+  - **Multica runs**: outcome per agent, failure reasons, and the run list with cancel buttons;
+  - **agents and switches**: change an agent's model or thinking level, and pause or resume a watchdog that honours a stop file.
+- **English and Turkish**: the page follows the browser's language. The EN/TR switch in the corner is remembered.
+- **Light and dark**: the page follows the system setting.
 
 Nothing on the page deletes data or spends money.
 
@@ -84,7 +88,7 @@ cp config.example.json ~/.config/quotaboard/config.json
 | `rules.opus_allowed_agents` | If set, any other Claude agent on Opus is flagged. |
 | `rules.session_share`, `rules.context_warning`, `rules.long_run_minutes` | Advice thresholds (defaults 0.3, 400000, 60). |
 
-The config lives in `~/.config/quotaboard/` (or wherever `QUOTABOARD_CONFIG` points), outside the repo. So do the Claude percentages you type in.
+The config lives in `~/.config/quotaboard/` (or wherever `QUOTABOARD_CONFIG` points), outside the repo. So do the Claude percentages you type in (`claude-percentages.json`) and the quota readings (`history.jsonl`, kept for 14 days).
 
 ## How the numbers are made
 
@@ -105,7 +109,8 @@ The config lives in `~/.config/quotaboard/` (or wherever `QUOTABOARD_CONFIG` poi
 
 ```
 quotaboard.py         server, collectors, advice rules, actions
-quotaboard.html       the page (no build step, no external assets)
+quotaboard.html       the page (no build step, no external assets; EN and TR strings inside)
+PRODUCT.md            what the product is for, used by design tooling
 bin/quotaboard        launcher
 install.sh            puts the launcher on PATH
 config.example.json   every config key with an example

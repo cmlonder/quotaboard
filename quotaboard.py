@@ -136,6 +136,63 @@ def items(obj):
     return []
 
 
+class History:
+    """Quota readings over time (left %), so a lane can be drawn and a slope projected. One JSON line per reading in
+    ~/.config/quotaboard/history.jsonl; kept for 14 days."""
+    PATH = os.path.join(CONFIG_DIR, "history.jsonl")
+    KEEP = timedelta(days=14)
+
+    def __init__(self):
+        self.rows, self.lock = [], threading.Lock()
+        try:
+            for line in open(self.PATH, encoding="utf-8"):
+                try:
+                    self.rows.append(json.loads(line))
+                except ValueError:
+                    pass
+        except OSError:
+            pass
+        self.prune(rewrite=True)
+
+    def prune(self, rewrite=False):
+        cut = (now() - self.KEEP).isoformat()
+        before = len(self.rows)
+        self.rows = [r for r in self.rows if r.get("t", "") >= cut]
+        if rewrite and len(self.rows) != before:
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            with open(self.PATH, "w", encoding="utf-8") as f:
+                f.writelines(json.dumps(r) + "\n" for r in self.rows)
+
+    def record(self, readings):
+        t = now().isoformat(timespec="seconds")
+        new = [{"t": t, "k": k, "v": v} for k, v in readings if isinstance(v, (int, float))]
+        if not new:
+            return
+        with self.lock:
+            self.rows += new
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            with open(self.PATH, "a", encoding="utf-8") as f:
+                f.writelines(json.dumps(r) + "\n" for r in new)
+            if len(self.rows) > 50_000:
+                self.prune(rewrite=True)
+
+    def since(self, hours):
+        cut = (now() - timedelta(hours=hours)).isoformat()
+        out = defaultdict(list)
+        with self.lock:
+            for r in self.rows:
+                if r["t"] >= cut:
+                    out[r["k"]].append([r["t"], r["v"]])
+        return out
+
+
+def pct_value(s):
+    try:
+        return float(str(s).rstrip("%"))
+    except ValueError:
+        return None
+
+
 def put(name, value=None, error=None):
     with LOCK:
         if error is None:
@@ -227,6 +284,8 @@ def src_antigravity():
         except Exception as e:  # one account failing must not hide the others
             out[acc["name"]] = {"error": str(e)[:200]}
         out[acc["name"]].update({"command": acc["command"], "note": acc.get("note", ""), "runtimes": acc.get("runtimes", [])})
+        HIST.record([(f"agy|{acc['name']}|{r['group']}|{limit_name(r['limit'])}", pct_value(r["left"]))
+                     for r in out[acc["name"]].get("rows", [])])
     return out
 
 
@@ -263,8 +322,8 @@ def codex_limits():
         w = lim.get(key)
         if w:
             mins = w.get("windowDurationMins") or 0
-            name = "5-hour" if mins == 300 else "weekly" if mins == 10080 else "monthly" if mins >= 40000 else f"{mins}-minute"
-            rows.append({"name": name, "left": 100 - (w.get("usedPercent") or 0),
+            name = "5h" if mins == 300 else "weekly" if mins == 10080 else "monthly" if mins >= 40000 else f"{mins}m"
+            rows.append({"window": name, "left": 100 - (w.get("usedPercent") or 0),
                          "reset": datetime.fromtimestamp(w["resetsAt"], timezone.utc).isoformat() if w.get("resetsAt") else ""})
     return {"account": (acc.get("email") or "").split("@")[0], "plan": lim.get("planType") or acc.get("planType"),
             "rows": rows}
@@ -282,13 +341,12 @@ def openrouter_limits():
     free = d.get("free_model_daily_requests") or {}
     rows = []
     if free.get("limit"):
-        rows.append({"name": "free models, daily requests", "left": round(100 * free.get("remaining", 0) / free["limit"]),
-                     "text": f"{free.get('remaining', 0)} / {free['limit']}", "reset": ""})
+        rows.append({"kind": "free_requests", "left": round(100 * free.get("remaining", 0) / free["limit"]),
+                     "remaining": free.get("remaining", 0), "limit": free["limit"], "reset": ""})
     lim = d.get("limit")
-    rows.append({"name": "credit", "left": None if not lim else round(100 * (d.get("limit_remaining") or 0) / lim),
-                 "text": f"${d.get('limit_remaining') or 0:.2f} left" if lim else "no credit (free tier)", "reset": ""})
-    return {"plan": "free tier" if d.get("is_free_tier") else "paid", "rows": rows,
-            "usage": f"${d.get('usage_monthly', 0):.2f} this month"}
+    rows.append({"kind": "credit", "left": None if not lim else round(100 * (d.get("limit_remaining") or 0) / lim),
+                 "remaining": d.get("limit_remaining") or 0, "limit": lim, "reset": ""})
+    return {"free_tier": bool(d.get("is_free_tier")), "rows": rows, "usage_month": d.get("usage_monthly", 0)}
 
 
 def claude_plan():
@@ -321,6 +379,9 @@ def src_quotas():
             out[name] = fn()
         except Exception as e:  # one provider failing must not hide the others
             out[name] = {"error": f"{type(e).__name__}: {e}"[:200]}
+    readings = [(f"codex|{r['window']}", r["left"]) for r in (out.get("codex") or {}).get("rows", [])]
+    readings += [(f"openrouter|{r['kind']}", r["left"]) for r in (out.get("openrouter") or {}).get("rows", [])]
+    HIST.record(readings)
     out["installed"] = {k: bool(shutil.which(k)) for k in ("claude", "codex", "opencode", "gemini", "agy", "ccusage", "multica")}
     return out
 
@@ -407,6 +468,7 @@ class Scan:
 
 
 SCAN = Scan()
+HIST = History()
 
 
 def src_scan():
@@ -571,12 +633,23 @@ def view():
     w_start = ts(active["startTime"]) if active else None
     sess = {}
     model_today = defaultdict(lambda: {"usd": 0.0, "tokens": 0})
+    sess_hours = defaultdict(lambda: defaultdict(float))  # sid -> UTC hour -> usd, last 7 days
+    types = {span: {"tokens": [0, 0, 0, 0], "usd": [0.0, 0.0, 0.0, 0.0]} for span in ("today", "week")}
     for (sid, hour, model), v in scan["use"].items():
         h = datetime.fromisoformat(hour + ":00:00+00:00")
         usd = weight(v) * price.get(model, 0)
         s = sess.setdefault(sid, {"today": 0.0, "window": 0.0, "week": 0.0})
+        spans = []
         if t_now - h <= timedelta(days=7):
             s["week"] += usd
+            sess_hours[sid][hour] += usd
+            spans.append("week")
+        if local(h).date().isoformat() == today:
+            spans.append("today")
+        for span in spans:  # what each token type costs: cache reads are most tokens but a tenth of the price
+            for i in range(4):
+                types[span]["tokens"][i] += v[i]
+                types[span]["usd"][i] += v[i] * WEIGHT[i] * price.get(model, 0)
         if local(h).date().isoformat() == today:
             s["today"] += usd
             model_today[model]["usd"] += usd
@@ -590,12 +663,20 @@ def view():
             continue
         cls, label, run = kind_of(meta, runs_by_short, runs_by_session)
         issue = (run or {}).get("issue_key") or ""
-        rows.append({"id": sid, "kind": cls, "label": label, "title": meta.get("title") or "",
+        task = re.match(r'\s*<scheduled-task name="([^"]+)"', meta.get("first_message") or "")
+        rows.append({"id": sid, "kind": cls, "label": label, "task": task.group(1) if task else None, "title": meta.get("title") or "",
                      "project": project_of(meta.get("dir", "")), "first_message": (meta.get("first_message") or "")[:160],
                      "last": meta.get("last"), "context": meta.get("context", 0), "model": meta.get("model"),
                      "today": round(s["today"], 2), "window": round(s["window"], 2), "week": round(s["week"], 2),
                      "agent": (run or {}).get("agent"), "issue": issue, "issue_title": issues.get(issue, {}).get("title", "")})
     rows.sort(key=lambda r: -r["today"])
+    kind_of_sid = {r["id"]: r["kind"] for r in rows}
+    hourly = defaultdict(lambda: defaultdict(float))
+    for sid, hours in sess_hours.items():
+        k = kind_of_sid.get(sid)
+        if k:
+            for hour, usd in hours.items():
+                hourly[hour][k] += usd
     by_kind = defaultdict(lambda: {"today": 0.0, "window": 0.0, "week": 0.0, "sessions": 0})
     for r in rows:
         k = by_kind[r["kind"]]
@@ -634,7 +715,7 @@ def view():
                   "tokens": active["totalTokens"], "per_hour": round(rate, 2), "models": active.get("models", []),
                   "cap": round(cap, 2) if cap else None, "cap_source": cap_source,
                   "full_at": full_at.isoformat() if full_at else None, "full_before_end": bool(full_at and full_at < end)}
-    recent = [{"start": b["startTime"], "end": b.get("actualEndTime"), "usd": round(b["costUSD"], 2),
+    recent = [{"start": b["startTime"], "end": b.get("actualEndTime"), "close": b["endTime"], "usd": round(b["costUSD"], 2),
                "active": bool(b.get("isActive"))} for b in blocks if ts(b["startTime"]) > t_now - timedelta(days=3)]
 
     # ccusage also reads Antigravity transcripts and prices some of its models; the Claude plan only cares about claude-*
@@ -658,6 +739,9 @@ def view():
            "runtimes": {rt["name"]: {"provider": rt["provider"], "agents": runtime_agents.get(rt["name"], [])}
                         for rt in runtimes.values()},
            "multica": bool(CFG.get("multica")), "model_action": model_mode(), "sources": sources,
+           "hourly": {h: {k: round(u, 3) for k, u in d.items()} for h, d in sorted(hourly.items())},
+           "token_types": {span: {"tokens": d["tokens"], "usd": [round(u, 2) for u in d["usd"]]} for span, d in types.items()},
+           "history": HIST.since(72),
            "options": {"claude": CLAUDE_MODELS, "thinking": THINKING, "other": other_models(agents, runs)}}
     out["today_ccusage"] = next((d["usd"] for d in out["daily"] if d["day"] == today), None)
     out["advice"] = advice(out, runs, issues, t_now)
@@ -677,33 +761,29 @@ def other_models(agents, runs):
 # ---------- advice: each rule says what it saw and why it matters ----------
 
 def advice(v, runs, issues, t_now):
+    """Each entry is a rule id plus the numbers it saw; the page words it in the reader's language."""
     out, R = [], CFG["rules"]
 
-    def add(level, text, why, action=None):
-        out.append({"level": level, "text": text, "why": why, "action": action})
+    def add(level, rule, action=None, **p):
+        out.append({"level": level, "rule": rule, "p": p, "action": action})
 
     w = v["window"]
     if w and w.get("full_at") and w["full_before_end"]:
-        add("high", f"At this pace the Claude window fills at {hhmm(ts(w['full_at']))}; it resets at {hhmm(ts(w['end']))}.",
-            f"${w['usd']} so far, ${w['per_hour']} per hour. Estimated cap ${w['cap']} ({w['cap_source']}). "
-            "The real plan percentage is only shown in the Claude app.")
+        add("high", "window_fills", at=w["full_at"], end=w["end"], usd=w["usd"], per_hour=w["per_hour"], cap=w["cap"])
     elif w and w.get("cap") and w["usd"] >= 0.7 * w["cap"]:
-        add("medium", f"{round(100 * w['usd'] / w['cap'])}% of the estimated Claude window cap is used.",
-            f"${w['usd']} / ${w['cap']} (cap estimate: {w['cap_source']}).")
+        add("medium", "window_high", pct=round(100 * w["usd"] / w["cap"]), usd=w["usd"], cap=w["cap"])
 
     total = v["today_ccusage"] or sum(r["today"] for r in v["sessions"]) or 0
     for r in v["sessions"]:
         if r["kind"] == "multica" or total <= 0:
             continue
-        name = r["title"] or r["first_message"][:50] or r["id"][:8]
+        name = r["title"] or r["first_message"][:60] or r["id"][:8]
         share = r["today"] / total
         if share >= R["session_share"] and r["today"] >= 10:
-            add("high", f"“{name}” is {round(100 * share)}% of today's spend. Start a new session.",
-                f"${r['today']} of ${round(total, 2)} today. Its context is {r['context'] // 1000}k tokens and every message "
-                "re-reads it. Asking for a short hand-over note and starting fresh resets that.")
+            add("high", "session_share", name=name, pct=round(100 * share), usd=r["today"], total=round(total, 2),
+                context=r["context"])
         elif r["context"] >= R["context_warning"] and r["today"] >= 3:
-            add("medium", f"“{name}” has a {r['context'] // 1000}k-token context.",
-                "Every message re-reads it; the same work is much cheaper in a new session.")
+            add("medium", "session_context", name=name, context=r["context"], usd=r["today"])
 
     expensive = [m.lower() for m in R["expensive_models"]]
     allowed = set(R["opus_allowed_agents"])
@@ -712,22 +792,18 @@ def advice(v, runs, issues, t_now):
         fix = {"type": "model", "agent": a["name"], "model": "claude-sonnet-5-5" if claude else a["model"],
                "thinking": a["thinking"] or "medium"}
         if claude and any(m in a["model"] for m in expensive):
-            add("high", f"{a['name']} uses an expensive model ({a['model']}).",
-                "Listed in rules.expensive_models. Sonnet is enough for most work.", fix)
+            add("high", "agent_expensive", fix, agent=a["name"], model=a["model"])
         elif claude and allowed and "opus" in a["model"] and a["name"] not in allowed:
-            add("medium", f"{a['name']} uses Opus; the rules say Sonnet.",
-                f"Opus is allowed only for: {', '.join(sorted(allowed))} (rules.opus_allowed_agents).", fix)
+            add("medium", "agent_opus", fix, agent=a["name"], allowed=sorted(allowed))
         elif claude and a["thinking"] in ("high", "xhigh", "max") and a["name"] not in allowed:
-            add("low", f"{a['name']} runs at {a['thinking']} thinking.",
-                "Higher thinking means more output tokens; medium is enough for most work.", {**fix, "model": a["model"]})
+            add("low", "agent_thinking", {**fix, "model": a["model"]}, agent=a["name"], thinking=a["thinking"])
     used = defaultdict(int)
     for r in runs:
         if any(m in (r.get("model") or "") for m in expensive) and t_now - (ts(r.get("created")) or t_now) <= timedelta(hours=24):
             used[r["agent"]] += 1
     for name, n in used.items():
         if not any(a["name"] == name and any(m in a["model"] for m in expensive) for a in v["agents"]):
-            add("low", f"{name} ran {n} times on an expensive model in the last 24 hours.",
-                "The agent is no longer set to it; these may be runs from before the change.")
+            add("low", "runs_expensive", agent=name, n=n)
 
     by_issue = defaultdict(list)
     for r in runs:
@@ -743,15 +819,13 @@ def advice(v, runs, issues, t_now):
         last = ts(rs[0]["created"])
         if streak >= 3 and last and t_now - last <= timedelta(hours=24) and \
                 issues.get(key, {}).get("status") not in ("done", "cancelled"):
-            reasons = sorted({(r.get("reason") or "?").split(".")[-1] for r in rs[:streak]})
-            add("medium", f"{key} has failed {streak} runs in a row ({rs[0]['agent']}).",
-                f"Reason: {', '.join(reasons)}. Every retry burns tokens again.")
+            add("medium", "issue_failing", issue=key, n=streak, agent=rs[0]["agent"],
+                reasons=sorted({(r.get("reason") or "?").split(".")[-1] for r in rs[:streak]}))
 
     for r in v["live"]:
         if (r.get("running_minutes") or 0) >= R["long_run_minutes"]:
-            add("medium", f"{r['agent']} · {r['issue_key'] or 'no issue'} has been running for {r['running_minutes']} minutes.",
-                "A long run may be stuck; check the issue and cancel if needed.",
-                {"type": "cancel", "run": r["task_id"], "label": f"{r['agent']} · {r['issue_key']}"})
+            add("medium", "run_long", {"type": "cancel", "run": r["task_id"], "label": f"{r['agent']} · {r['issue_key']}"},
+                agent=r["agent"], issue=r["issue_key"], minutes=r["running_minutes"])
 
     for name, acc in v["antigravity"].items():
         for row in acc.get("rows") or []:
@@ -762,24 +836,23 @@ def advice(v, runs, issues, t_now):
                 if g.startswith("gemini") else (lambda m: m.startswith("claude") or m.startswith("gpt"))
             hit = [a["name"] for a in v["agents"] if a["runtime"] in acc.get("runtimes", []) and uses(a["model"])]
             if hit or not v["multica"]:
-                add("medium", f"Antigravity {name}: {row['group']} {limit_name(row['limit'])} quota is used up ({row['left']} left).",
-                    f"Resets {fmt_reset(row['reset'])}." + (f" Agents on this account using it: {', '.join(hit)}; "
-                                                          "they can move to another account's runtime." if hit else ""))
+                add("medium", "agy_empty", account=name, group=row["group"], window=limit_name(row["limit"]),
+                    left=row["left"], reset=row["reset"], agents=hit)
 
     sch = v["by_kind"].get("scheduled", {})
     if sch.get("today", 0) >= 5:
-        add("low", f"Scheduled tasks spent ${sch['today']} today.", "Running them less often would save that.")
+        add("low", "scheduled_spend", usd=sch["today"])
     for i, d in enumerate(v["stop_files"]):
         if d["stopped"]:
-            add("low", f"{d['name']} is stopped.", d["description"] or "Its stop file exists.",
-                {"type": "stop_file", "i": i, "stop": False})
+            add("low", "switch_stopped", {"type": "stop_file", "i": i, "stop": False}, name=d["name"],
+                description=d["description"])
     order = {"high": 0, "medium": 1, "low": 2}
     return sorted(out, key=lambda o: order[o["level"]])
 
 
 def limit_name(s):
     s = s.lower()
-    return "weekly" if "weekly" in s else "5-hour" if "five hour" in s else s
+    return "weekly" if "weekly" in s else "5h" if "five hour" in s else s
 
 
 def fmt_reset(s):
