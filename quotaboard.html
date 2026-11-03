@@ -411,7 +411,7 @@ const I18N = {
     cf_fb_chain_t: "Save {a}'s fallback chain?", cf_fb_chain_sub: "Writes the fallback line in the agent's file and commits it. Nothing goes to Multica; the watchdog reads it on its next turn.",
     restore: "Return to own model", move_now: "Move to {x} now",
     agent_models: "Agent models", switches: "Stop switches", a_agent: "Agent", a_runtime: "Runtime", a_model: "Model", a_thinking: "Thinking",
-    in_model_name: "in the model name", apply: "Apply", no_agents_list: "No agents.",
+    default_level: "default", apply: "Apply", no_agents_list: "No agents.",
     model_note_file: "Rewrites the agent's file, runs the push command, commits the file.", model_note_mx: "Runs multica agent update.",
     sw_running: "running", sw_stopped: "stopped {t}", sw_stop: "Stop", sw_start: "Start", no_switches: "None configured. Add stop_files to the config to pause a watchdog or scheduler from here.",
     switch_to: "Switch to {m}", start_it: "Start it",
@@ -488,7 +488,7 @@ const I18N = {
     cf_fb_chain_t: "{a} için yedek zinciri kaydedilsin mi?", cf_fb_chain_sub: "Ajan dosyasındaki fallback satırını yazar ve commit'ler. Multica'ya bir şey gitmez; bekçi bir sonraki turda okur.",
     restore: "Kendi modeline döndür", move_now: "Şimdi {x}'e geçir",
     agent_models: "Ajan modelleri", switches: "Durdurma anahtarları", a_agent: "Ajan", a_runtime: "Runtime", a_model: "Model", a_thinking: "Düşünme",
-    in_model_name: "modelin adında", apply: "Uygula", no_agents_list: "Ajan yok.",
+    default_level: "varsayılan", apply: "Uygula", no_agents_list: "Ajan yok.",
     model_note_file: "Ajanın dosyasını yazar, gönderme komutunu çalıştırır, dosyayı commit'ler.", model_note_mx: "multica agent update çalıştırır.",
     sw_running: "çalışıyor", sw_stopped: "durdu {t}", sw_stop: "Durdur", sw_start: "Başlat", no_switches: "Tanımlı değil. Bir bekçiyi ya da zamanlayıcıyı buradan durdurmak için ayara stop_files ekle.",
     switch_to: "{m} yap", start_it: "Başlat",
@@ -568,7 +568,8 @@ function confirmFbSwitch(id, name, n, target) { confirmBox(t("cf_fb_switch_t", {
 function confirmRestore(id, name) { confirmBox(t("cf_fb_restore_t", {a: name}), `<span class="sub">${esc(t("cf_fb_restore_sub"))}</span>`, () => act("/api/fallback/restore", {agent_id: id})); }
 const modelNote = () => D?.model_action === "file" ? t("model_note_file") : t("model_note_mx");
 function confirmModel(a, model, thinking) {
-  const o = a.model + (a.thinking ? " / " + a.thinking : ""), n = model + (thinking ? " / " + thinking : "");
+  const inName = D?.options?.catalog?.[a.provider]?.in_name;
+  const o = a.model + (a.thinking ? " / " + a.thinking : ""), n = inName ? model + (thinking ? "-" + thinking : "") : model + (thinking ? " / " + thinking : "");
   confirmBox(t("cf_model_t"), t("cf_model", {a: esc(a.name), o: esc(o), n: esc(n)}) + `<span class="sub">${esc(t("cf_model_sub", {note: modelNote()}))}</span>`, () => act("/api/model", {agent: a.name, model, thinking}));
 }
 function confirmCancel(run, label) { confirmBox(t("cf_cancel_t"), `<b>${esc(label)}</b><span class="sub">${esc(t("cf_cancel_sub"))}</span>`, () => act("/api/cancel", {run})); }
@@ -1065,21 +1066,37 @@ function renderRuns(v) {
   ], rows, F.rstatus === "live" ? {k: "mins"} : {k: "created"});
   $("runs").querySelectorAll("button[data-k]").forEach(b => b.onclick = () => confirmCancel(b.dataset.k, b.dataset.e));
 }
+function splitModel(a, c) {
+  if (c.in_name) { const k = a.model.lastIndexOf("-"), base = a.model.slice(0, k), lvl = a.model.slice(k + 1); if (k > 0 && (c.models[base] || []).includes(lvl)) return [base, lvl]; }
+  return [a.model, c.in_name ? "" : a.thinking];
+}
+function levelOptions(c, base, cur) {
+  const levels = c.models[base] || [], opts = (c.in_name && levels.length ? [] : [""]).concat(levels);
+  return opts.map(l => `<option value="${esc(l)}" ${l === cur ? "selected" : ""}>${esc(l || t("default_level"))}</option>`).join("");
+}
 function renderAgents(v) {
-  const o = v.options, list = v.agents.filter(a => match([a.name, a.model, a.runtime].join(" ")));
+  const cat = v.options.catalog || {}, list = v.agents.filter(a => match([a.name, a.model, a.runtime].join(" ")));
+  const catOf = a => cat[a.provider || "other"] || {in_name: false, models: {[a.model]: a.thinking ? [a.thinking] : []}};
   $("model_note").textContent = modelNote();
   $("agents").innerHTML = list.length ? `<table><thead><tr><th>${esc(t("a_agent"))}</th><th>${esc(t("a_runtime"))}</th><th>${esc(t("a_model"))}</th><th>${esc(t("a_thinking"))}</th><th></th></tr></thead><tbody>
     ${list.map(a => {
-      const i = v.agents.indexOf(a), claude = a.provider === "claude", mods = claude ? o.claude : [...new Set([a.model, ...o.other])];
+      const i = v.agents.indexOf(a), c = catOf(a), [base, lvl] = splitModel(a, c);
+      const models = Object.keys(c.models).sort();
       return `<tr><td>${esc(a.name)}</td><td class="cell-sub">${esc(a.runtime)}</td>
-        <td><select class="sel" data-i="${i}" data-f="model">${mods.map(m => `<option ${m === a.model ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></td>
-        <td>${claude ? `<select class="sel" data-i="${i}" data-f="thinking">${o.thinking.map(m => `<option ${m === a.thinking ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>` : `<span class="cell-sub">${esc(t("in_model_name"))}</span>`}</td>
+        <td><select class="sel" data-i="${i}" data-f="model">${models.map(m => `<option ${m === base ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></td>
+        <td><select class="sel" data-i="${i}" data-f="thinking">${levelOptions(c, base, lvl)}</select></td>
         <td><button class="btn" data-i="${i}" disabled>${esc(t("apply"))}</button></td></tr>`;
     }).join("")}</tbody></table>` : `<div class="empty">${esc(t("no_agents_list"))}</div>`;
   const root = $("agents");
-  const pick = i => [root.querySelector(`select[data-i="${i}"][data-f="model"]`).value, root.querySelector(`select[data-i="${i}"][data-f="thinking"]`)?.value ?? v.agents[i].thinking];
-  root.querySelectorAll("select").forEach(s => s.onchange = () => { const i = s.dataset.i, a = v.agents[i], [m, th] = pick(i); root.querySelector(`button[data-i="${i}"]`).disabled = m === a.model && th === a.thinking; editing = true; });
-  root.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { const [m, th] = pick(b.dataset.i); editing = false; confirmModel(v.agents[b.dataset.i], m, th); });
+  const sel = (i, f) => root.querySelector(`select[data-i="${i}"][data-f="${f}"]`);
+  const dirty = i => { const a = v.agents[i], [b0, l0] = splitModel(a, catOf(a)); root.querySelector(`button[data-i="${i}"]`).disabled = sel(i, "model").value === b0 && sel(i, "thinking").value === l0; editing = true; };
+  root.querySelectorAll('select[data-f="model"]').forEach(s => s.onchange = () => {
+    const i = s.dataset.i, c = catOf(v.agents[i]), prev = sel(i, "thinking").value, levels = c.models[s.value] || [];
+    const keep = levels.includes(prev) ? prev : levels.includes("medium") ? "medium" : c.in_name ? (levels[0] || "") : "";
+    sel(i, "thinking").innerHTML = levelOptions(c, s.value, keep); dirty(i);
+  });
+  root.querySelectorAll('select[data-f="thinking"]').forEach(s => s.onchange = () => dirty(s.dataset.i));
+  root.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { const i = b.dataset.i; editing = false; confirmModel(v.agents[i], sel(i, "model").value, sel(i, "thinking").value); });
   $("switches").innerHTML = v.stop_files.length ? v.stop_files.map((d, i) => `<div class="switch"><div class="switch-head"><b>${esc(d.name)}</b>
       <span class="tag" style="color:var(${d.stopped ? "--pen-red" : "--green"})">${esc(d.stopped ? t("sw_stopped", {t: when(d.since)}) : t("sw_running"))}</span><span style="flex:1"></span>
       <button class="btn ${d.stopped ? "" : "danger"}" data-sw="${i}">${esc(d.stopped ? t("sw_start") : t("sw_stop"))}</button></div>
@@ -1141,7 +1158,11 @@ function wireEditor(fb, v) {
   if (!box || !fbEdit) return;
   box.querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const k = +b.dataset.up; [fbEdit.chain[k - 1], fbEdit.chain[k]] = [fbEdit.chain[k], fbEdit.chain[k - 1]]; renderFallbacks(v); });
   box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { fbEdit.chain.splice(+b.dataset.rm, 1); renderFallbacks(v); });
-  $("fb_rt").onchange = e => { const r = fb.runtimes.find(x => x.id === e.target.value); $("fb_models").innerHTML = (r?.models || []).map(m => `<option value="${esc(m)}">`).join(""); };
+  $("fb_rt").onchange = e => {
+    const r = fb.runtimes.find(x => x.id === e.target.value), c = (v.options.catalog || {})[r?.provider];
+    const fromCat = c ? Object.entries(c.models).flatMap(([m, l]) => c.in_name && l.length ? l.map(x => `${m}-${x}`) : [m]) : [];
+    $("fb_models").innerHTML = [...new Set([...(r?.models || []), ...fromCat])].map(m => `<option value="${esc(m)}">`).join("");
+  };
   $("fb_addbtn").onclick = () => { const rid = $("fb_rt").value, m = $("fb_model").value.trim(); if (rid && m) { fbEdit.chain.push({runtime_id: rid, model: m, thinking: ""}); renderFallbacks(v); } };
   $("fb_cancel").onclick = () => { fbEdit = null; editing = false; renderFallbacks(v); };
   $("fb_save").onclick = () => { const e = fbEdit; confirmBox(t("cf_fb_chain_t", {a: e.name}), `<span class="sub">${esc(t("cf_fb_chain_sub"))}</span>`, async () => { fbEdit = null; editing = false; await act("/api/fallback/chain", {agent_id: e.id, chain: e.chain}); }); };

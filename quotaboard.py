@@ -386,6 +386,57 @@ def src_quotas():
     return out
 
 
+LEVELS = ("low", "medium", "high", "xhigh", "max", "ultra")
+
+
+def src_catalog():
+    """Which models each runtime kind offers and which thinking levels each model takes.
+    Claude: a separate thinking level. Antigravity: the level is the model name's suffix (`agy models`).
+    Codex: levels per model from its local models cache. Opencode: model names only."""
+    cat = {"claude": {"in_name": False, "models": {m: list(THINKING) for m in CLAUDE_MODELS}}}
+    cmd = next((a["command"] for a in CFG["antigravity"]), "agy" if shutil.which("agy") else None)
+    if cmd:
+        try:
+            models = {}
+            for line in sh([cmd, "models"], timeout=90).splitlines():
+                name = line.split("\t")[0].strip()
+                if not re.fullmatch(r"[\w.:/-]+", name):
+                    continue
+                base, _, lvl = name.rpartition("-")
+                if base and lvl in LEVELS:
+                    models.setdefault(base, []).append(lvl)
+                else:
+                    models.setdefault(name, [])
+            if models:
+                cat["antigravity"] = {"in_name": True, "models": {b: sorted(l, key=LEVELS.index) for b, l in models.items()}}
+        except Exception:
+            pass
+    try:
+        d = json.load(open(os.path.expanduser("~/.codex/models_cache.json")))
+        cat["codex"] = {"in_name": False, "models": {m["slug"]: [l["effort"] for l in m.get("supported_reasoning_levels") or []]
+                                                     for m in d.get("models", []) if m.get("slug")}}
+    except (OSError, ValueError, KeyError):
+        pass
+    if shutil.which("opencode"):
+        try:
+            names = [l.strip() for l in sh(["opencode", "models"], timeout=60).splitlines() if re.fullmatch(r"[\w.:/@+-]+", l.strip())]
+            if names:
+                cat["opencode"] = {"in_name": False, "models": {n: [] for n in names}}
+        except Exception:
+            pass
+    return cat
+
+
+def split_model(provider, model, cat):
+    """(base, level) for a runtime whose level lives in the model name; (model, None) otherwise."""
+    c = cat.get(provider) or {}
+    if c.get("in_name"):
+        base, _, lvl = model.rpartition("-")
+        if base and lvl in (c["models"].get(base) or []):
+            return base, lvl
+    return model, None
+
+
 class Scan:
     """Incremental reader of Claude Code transcripts: tokens per (session, UTC hour, model) and session facts."""
 
@@ -540,6 +591,7 @@ def src_stop_files():
 
 
 SOURCES = [("blocks", src_blocks, 60), ("scan", src_scan, 60), ("daily", src_daily, 180), ("quotas", src_quotas, 300),
+           ("catalog", src_catalog, 6 * 3600),
            ("stop_files", src_stop_files, 30)]
 if CFG["antigravity"]:
     SOURCES.append(("antigravity", src_antigravity, 300))
@@ -640,7 +692,11 @@ def view():
     mu = D.get("multica") or {}
     runs, runtimes = mu.get("runs") or [], mu.get("runtimes") or {}
     issues = D.get("issues") or {}
-    agents = D.get("agents") or []
+    agents = [dict(a) for a in D.get("agents") or []]
+    for a in agents:  # agents may have been read before the runtimes were
+        rt = runtimes.get(a["runtime_id"])
+        if rt and not a["provider"]:
+            a["provider"], a["runtime"] = rt["provider"], rt["name"]
     scan = D.get("scan") or {"use": {}, "meta": {}}
     runs_by_short = {r["task_id"].replace("-", "")[-12:]: r for r in runs if r.get("task_id")}
     runs_by_session = {r["session_id"]: r for r in runs if r.get("session_id")}
@@ -759,7 +815,7 @@ def view():
            "hourly": {h: {k: round(u, 3) for k, u in d.items()} for h, d in sorted(hourly.items())},
            "token_types": {span: {"tokens": d["tokens"], "usd": [round(u, 2) for u in d["usd"]]} for span, d in types.items()},
            "history": HIST.since(72),
-           "options": {"claude": CLAUDE_MODELS, "thinking": THINKING, "other": other_models(agents, runs)}}
+           "options": {"catalog": catalog_for(agents, runs, D.get("catalog") or {})}}
     out["fallback"] = fallback_view(D.get("fallback"), agents, runtimes, live, t_now)
     out["today_ccusage"] = next((d["usd"] for d in out["daily"] if d["day"] == today), None)
     out["advice"] = advice(out, runs, issues, t_now)
@@ -803,6 +859,19 @@ def fallback_view(fb, agents, runtimes, live, t_now):
 def model_mode():
     m = CFG.get("multica") or {}
     return "file" if m.get("agent_files") and m.get("push_command") else "multica" if m else None
+
+
+def catalog_for(agents, runs, cat):
+    """The catalog, plus whatever model an agent or run already uses, so a current value is always selectable."""
+    out = {p: {"in_name": c["in_name"], "models": {m: list(l) for m, l in c["models"].items()}} for p, c in cat.items()}
+    out.setdefault("claude", {"in_name": False, "models": {m: list(THINKING) for m in CLAUDE_MODELS}})
+    for a in agents:
+        p = a["provider"] or "other"
+        c = out.setdefault(p, {"in_name": False, "models": {}})
+        base, lvl = split_model(p, a["model"], out)
+        if a["model"] and base not in c["models"]:
+            c["models"][base] = [lvl] if lvl else ([a["thinking"]] if a["thinking"] else [])
+    return out
 
 
 def other_models(agents, runs):
@@ -937,24 +1006,25 @@ def act_model(body):
     a = agents.get(body.get("agent", ""))
     if not a:
         raise ValueError("no such agent")
-    model, thinking = body.get("model", ""), body.get("thinking", "")
-    if a["provider"] == "claude":
-        if model not in CLAUDE_MODELS or thinking not in THINKING:
-            raise ValueError("invalid model or thinking level for a Claude runtime")
-    else:
-        if model not in other_models(list(agents.values()), (DATA.get("multica") or {}).get("runs") or []):
-            raise ValueError("invalid model for this runtime")
-        thinking = a["thinking"]  # other runtimes carry the level in the model name
+    model, thinking = body.get("model", ""), body.get("thinking", "") or ""
+    cat = catalog_for(list(agents.values()), [], DATA.get("catalog") or {})
+    c = cat.get(a["provider"] or "other") or {"in_name": False, "models": {}}
+    if model not in c["models"]:
+        raise ValueError(f"{model} is not offered on {a['runtime']}")
+    levels = c["models"][model]
+    if thinking and thinking not in levels:
+        raise ValueError(f"{model} does not take thinking level {thinking}")
+    if c["in_name"]:  # Antigravity: the level is part of the model name
+        if levels and not thinking:
+            raise ValueError(f"pick a thinking level for {model}")
+        model, thinking = (f"{model}-{thinking}" if thinking else model), ""
     if (model, thinking) == (a["model"], a["thinking"]):
         return {"message": "Nothing to change."}
     old = a["model"] + (f" / {a['thinking']}" if a["thinking"] else "")
     new = model + (f" / {thinking}" if thinking else "")
     note = ""
     if mode == "multica":
-        args = ["agent", "update", a["id"], "--model", model]
-        if a["provider"] == "claude":
-            args += ["--thinking-level", thinking]
-        mx(args, timeout=60)
+        mx(["agent", "update", a["id"], "--model", model, "--thinking-level", thinking], timeout=60)
     else:
         m = CFG["multica"]
         path = os.path.join(x(m["agent_files"]), a["file"])

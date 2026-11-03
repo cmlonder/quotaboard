@@ -33,7 +33,7 @@ The page is laid out like a strip-chart recorder's paper: what happened is drawn
   - **projects**, and Multica **agents** and **issues**;
   - **sessions**: a sortable table with each session's context size;
   - **Multica runs**: outcome per agent, failure reasons, and the run list with cancel buttons;
-  - **agents and fallbacks**: change an agent's model or thinking level; see each agent's fallback chain and where it runs now; move it to a fallback or back; edit the chain; read recent moves; pause or resume a watchdog that honours a stop file.
+  - **agents and fallbacks**: change any agent's model and thinking level, picked from what its runtime offers (Claude: a separate thinking level; Antigravity: the level is part of the model name, read from `agy models`; Codex: the levels its local model cache lists; Opencode: model names); see each agent's fallback chain and where it runs now; move it to a fallback or back; edit the chain; read recent moves; pause or resume a watchdog that honours a stop file.
 - **English and Turkish**: the page follows the browser's language. The EN/TR switch in the corner is remembered.
 - **Light and dark**: the page follows the system setting.
 
