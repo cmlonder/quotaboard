@@ -1081,6 +1081,17 @@ def act_claude_percentages(body):
             if not 0 <= val <= 100:
                 raise ValueError("a percentage is between 0 and 100")
             vals[k] = val
+    # the weekly reset moment the app shows; the page repeats it every seven days. Kept across saves.
+    wr = body.get("weekly_reset")
+    if wr:
+        vals["weekly_reset"] = datetime.fromisoformat(str(wr).replace("Z", "+00:00")).isoformat()
+    elif wr is None:
+        try:
+            old = json.load(open(MANUAL, encoding="utf-8")).get("weekly_reset")
+        except (OSError, ValueError):
+            old = None
+        if old:
+            vals["weekly_reset"] = old
     os.makedirs(CONFIG_DIR, exist_ok=True)
     json.dump({**vals, "at": now().isoformat()}, open(MANUAL, "w", encoding="utf-8"), indent=1)
     with LOCK:
