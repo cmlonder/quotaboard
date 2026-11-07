@@ -6,15 +6,22 @@ It runs on your own computer, listens only on `127.0.0.1`, and needs no account 
 
 ## What you get
 
-The page is laid out like a strip-chart recorder's paper: what happened is drawn in ink, the pace ahead in dashes, and limits in red pen.
+The page has two layers. The first screen answers only "where do I stand now":
 
-- **Recorder**: every quota on one shared time axis (the last 18 hours and the next 6), one lane each, with what is left and when it resets.
+- **One sentence on top**: whether the Claude window lasts until it resets or when it fills at this pace, which other quotas are running low or used up, and who is on a fallback. Urgent notes with an action (a window about to fill while an agent works, an empty Antigravity quota, an issue failing again and again) sit right under it.
+- **Quotas**: one row per quota on a shared 0–100% scale: Claude's 5-hour window (an estimate, with a link to type in the app's real numbers), Codex, each Antigravity account (its tightest limit, with all of its limits one click away) and OpenRouter's free requests, each with what is left and when it reopens.
+- **Fallbacks**: who is on a fallback and since when, with a button to return them; limits that are closed and until when; whether the watchdog is running; the last move.
+- **Spent today**: Claude today against the 7-day average, the open window, this week.
+
+Everything else is under **Details**, one tab each (also reachable as `#details/<tab>`, e.g. `#details/agents`):
+
+- **Timeline**: every quota on one shared time axis (the last 18 hours and the next 6), one lane each, with what is left and when it resets.
   - **Claude**: the current 5-hour window drawn as spend inside each window, against an estimated cap. The dashed pace line marks the time it fills, and the plan tier is shown. Claude's own percentages are only shown in the Claude app; you can type them in and the page shows how old they are.
   - **Antigravity**: every limit `agy -p /usage` reports (Gemini, Claude/GPT, Argon; 5-hour and weekly), for as many accounts as you configure. Readings are stored, so each lane builds a trace over time. When a quota falls steadily, the page projects when it runs out.
   - **Codex**: limits from `codex app-server` (no model call).
   - **OpenRouter**: free requests and credit for the key opencode signed in with.
 
-  Hover anywhere on the recorder to read every lane at that moment.
+  Hover anywhere on the timeline to read every lane at that moment.
 - **Notes**: plain rules, each with the reason it fired, and an action button where one applies. For example:
   - "this session is 45% of today's spend, start a new one";
   - "this session carries a 600k-token context";
@@ -23,8 +30,7 @@ The page is laid out like a strip-chart recorder's paper: what happened is drawn
   - "at this pace the window fills at 18:40";
   - "agent X is running on its fallback";
   - "the window fills at 20:40 and agent X is working; move it to its fallback now?".
-- **Today**: Claude spend against the 7-day average, the open window, this week, and how much went to cache reads.
-- **Analysis**, filterable by time (today, this window, 7 days), by kind (Multica, long-running, interactive, scheduled, side session) and by text:
+- **Spending, Sessions, Multica runs, Agents & fallbacks**, filterable by time (today, this window, 7 days), by kind (Multica, long-running, interactive, scheduled, side session) and by text:
   - **who spent it**, with the top sessions;
   - **when it burns**: an hour-by-day heatmap of the last 7 days;
   - **by day and kind**, and **models by day** (21 days);
@@ -35,7 +41,8 @@ The page is laid out like a strip-chart recorder's paper: what happened is drawn
   - **Multica runs**: outcome per agent, failure reasons, and the run list with cancel buttons;
   - **agents and fallbacks**: change any agent's model and thinking level, picked from what its runtime offers (Claude: a separate thinking level; Antigravity: the level is part of the model name, read from `agy models`; Codex: the levels its local model cache lists; Opencode: model names); see each agent's fallback chain and where it runs now; move it to a fallback or back; edit the chain; read recent moves; pause or resume a watchdog that honours a stop file.
 - **English and Turkish**: the page follows the browser's language. The EN/TR switch in the corner is remembered.
-- **Light and dark**: the page follows the system setting.
+- **Light and dark**: the page follows the system setting; the button next to the language switch can pin light or dark.
+- **Old agent names**: names from before the 7 November rename (Kalfa, Ürün Sahibi, Denetçi, …) in run history and watchdog logs are shown under their new names.
 
 Nothing on the page deletes data or spends money.
 
