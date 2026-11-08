@@ -8,9 +8,18 @@ It runs on your own computer, listens only on `127.0.0.1`, and needs no account 
 
 A menu on the left (a tab bar at the bottom on a phone) has five sections. Keys `1`–`5` jump between them and `R` refreshes. Each one has its own link (`#overview`, `#fallbacks`, `#spend`, `#spend/sessions`, `#agents`, `#agents/runs`, `#settings`); old `#details/<tab>` links still land in the right place. Badges on the menu show what needs a look: urgent notes, agents on a fallback, and sources that could not be read.
 
-**Overview** answers only "where do I stand now":
+**Overview** opens with the answer to "what runs out, and when does it refill":
 
-- **Calendar on top**: yesterday, today and the next five days (or the whole month), with every reset on it: Claude's 5-hour window and the time it fills at this pace, Claude's weekly reset (typed in once under Settings, then repeated every week), Codex's monthly reset, each Antigravity account's 5-hour and weekly resets, OpenRouter's daily reset, and when agents come back from a fallback or a closed limit reopens. Past days are shaded by that day's Claude spend. Click a day, or move with the arrow keys, to list everything on it. Short labels above the grid say whether the Claude window lasts, what is running low or used up, and who is on a fallback. Urgent notes with an action sit right under the calendar.
+- **One sentence and a countdown**: how many quotas are used up or will run out before they reset, the first one with its times, who is on a fallback, and a live countdown to the next thing that happens (a quota running out or one resetting).
+- **Fuel strips**: one row for every window of every provider: Claude's 5-hour window (and its weekly limit once typed in), Codex, every Antigravity limit on every account (5-hour and weekly), OpenRouter's daily requests. All rows share one time axis (48 hours or 7 days). Each row shows:
+  - what was used in the last hours;
+  - where it is heading at the current pace;
+  - the stretch it sits empty;
+  - the moment it refills.
+
+  The pace comes from the readings since the last refill. Rows are sorted so that what runs out first comes first. Clicking a row opens its numbers: what is left, the pace, when it runs out at that pace, the reset, how long it sits empty, and which agents use it.
+- **Fallbacks, spending (with the last 14 days) and reminders** side by side, then the calendar and the notes.
+- **Calendar**: yesterday, today and the next five days (or the whole month), with every reset on it: Claude's 5-hour window and the time it fills at this pace, Claude's weekly reset (typed in once under Settings, then repeated every week), Codex's monthly reset, each Antigravity account's 5-hour and weekly resets, OpenRouter's daily reset, and when agents come back from a fallback or a closed limit reopens. Past days are shaded by that day's Claude spend. Click a day, or move with the arrow keys, to list everything on it. Short labels above the grid say whether the Claude window lasts, what is running low or used up, and who is on a fallback. Urgent notes with an action sit right under the calendar.
 - **Quotas**: one row per quota on a shared 0–100% scale: Claude's 5-hour window (an estimate), Codex, each Antigravity account (its tightest limit, with all of its limits one click away) and OpenRouter's free requests. Each row has the provider's icon, what is left, a status badge, and when it reopens. A tick on each bar marks how much of the window's time is left; a bar that ends left of its tick runs out before it reopens. A List / Timeline switch shows the same quotas on one time axis.
 - **Fallbacks**: who is on a fallback and since when, with a button to return them; limits that are closed and until when; whether the watchdog is running.
 - **Spent today**: Claude today against the 7-day average, the open window, this week.
