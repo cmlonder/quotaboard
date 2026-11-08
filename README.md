@@ -23,6 +23,13 @@ The other sections go one level deeper:
 - **Agents**: Models (change model and thinking level) and Multica runs.
 - **Settings**: theme and language, the Claude app percentages, stop switches, the state of every data source, and the keyboard keys.
 
+**Reminders for unused quota.** When a quota still has room left and its reset is near, a macOS notification appears, even with the page closed.
+- By default it fires 3 days, 1 day, 6 hours and 1 hour before the reset, when at least 25% is unused.
+- It covers weekly and monthly windows: Codex, Antigravity, and Claude's weekly limit once its numbers are typed in. 5-hour and daily windows are off by default.
+- Each step fires once per reset, and only the nearest step fires, so a server that was off does not send a burst.
+- Settings → Reminders changes the times and the threshold, and can send a test notification.
+- Settings and what was sent are kept in `~/.config/quotaboard/reminders.json`.
+
 Every action asks for confirmation. While it runs, the button and a message in the corner say so; when it finishes, the message turns into the result or the error. If the server cannot be reached, a banner says so and the page keeps the last reading.
 
 What each part shows:

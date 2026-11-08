@@ -338,6 +338,21 @@ h3 { font-size: 14px; font-weight: 600; margin: 0 0 10px; color: var(--ink); }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; font-size: 13px; align-items: center; }
 .keys dt { white-space: nowrap; }
 .set-row.check { cursor: pointer; margin-bottom: 8px; }
+.steps { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+.steps legend { padding: 0; margin-bottom: 4px; }
+#rm_steps { display: flex; flex-wrap: wrap; gap: 6px; }
+#rm_steps label { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 16px; border: 1px solid var(--rule-2); background: var(--sheet); cursor: pointer; font-size: 12.5px; }
+#rm_steps label:has(input:checked) { border-color: var(--pen-blue); background: var(--wash-blue); color: var(--ink); }
+#rm_steps input { accent-color: var(--pen-blue); margin: 0; width: 15px !important; height: 15px; padding: 0; }
+.steps { flex-basis: 100%; }
+#rm_steps label { display: inline-flex !important; }
+.check-inline { display: inline-flex !important; grid-auto-flow: column; align-items: center; gap: 8px !important; cursor: pointer; flex-basis: 100%; }
+.check-inline input { width: 16px !important; height: 16px; accent-color: var(--pen-blue); }
+.form-acts { display: flex; gap: 8px; flex-basis: 100%; }
+.rm-list { list-style: none; margin: 4px 0 0; padding: 0; font-size: 13px; }
+.rm-list li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--rule); }
+.rm-list .aside { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.rm-h { font-size: 12px; color: var(--ink-3); margin: 12px 0 2px; font-weight: 560; }
 .set-row.check input { width: 18px; height: 18px; accent-color: var(--pen-blue); } .keys dd { margin: 0; color: var(--ink-2); }
 .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
 .tabs::-webkit-scrollbar { display: none; }
@@ -824,6 +839,18 @@ dialog h3 { font-size: 16px; margin-bottom: 8px; }
             </form>
             <p class="set-help" id="cap_note"></p>
           </section>
+          <section class="card pane set" id="remind_set" aria-labelledby="h_remind">
+            <h3 id="h_remind" data-i="rm_title"></h3>
+            <p class="set-help" data-i="rm_help"></p>
+            <label class="set-row check"><span data-i="rm_on"></span><input type="checkbox" id="rm_on"></label>
+            <form id="rm_form" class="fields">
+              <label><span data-i="rm_min"></span><input type="number" min="0" max="100" id="rm_min" inputmode="numeric"></label>
+              <fieldset class="steps"><legend data-i="rm_steps"></legend><div id="rm_steps"></div></fieldset>
+              <label class="check-inline"><input type="checkbox" id="rm_short"><span data-i="rm_short"></span></label>
+              <span class="form-acts"><button class="btn primary" type="submit" data-i="save"></button><button class="btn" type="button" id="rm_test" data-i="rm_test"></button></span>
+            </form>
+            <div id="rm_watch"></div>
+          </section>
           <section class="card pane set" aria-labelledby="h_switches">
             <h3 id="h_switches" data-i="switches"></h3>
             <div id="switches"></div>
@@ -932,7 +959,7 @@ const I18N = {
     nothing_match: "Nothing matches these filters.", showing: "Showing {a} of {b}. Search to narrow it down.",
     updated: "updated {t}", unreachable: "server unreachable — is quotaboard running?",
     all_fresh: "all sources fresh", collecting: "collecting: {x}", not_readable: "{x} not readable",
-    src_blocks: "window", src_daily: "daily", src_scan: "sessions", src_quotas: "quotas", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "issues", src_agents: "agents", src_stop_files: "switches", src_fallback: "fallbacks",
+    src_blocks: "window", src_daily: "daily", src_scan: "sessions", src_quotas: "quotas", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "issues", src_agents: "agents", src_stop_files: "switches", src_reminders: "reminders", src_fallback: "fallbacks",
     other: "Other", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago", in_h: "{h} h {m} min", in_m: "{m} min", in_d: "{d} d {h} h",
     adv: {
       window_fills: ["At this pace the Claude window fills at {at}, before it resets at {end}.", "{usd} so far at {per_hour} an hour; the cap is estimated at {cap}. The app shows the real figure."],
@@ -1027,7 +1054,7 @@ const I18N = {
     nothing_match: "Bu filtreyle bir şey yok.", showing: "{b} satırdan {a} tanesi gösteriliyor; aramayla daralt.",
     updated: "güncellendi {t}", unreachable: "sunucuya ulaşılamıyor; quotaboard çalışıyor mu?",
     all_fresh: "bütün kaynaklar güncel", collecting: "toplanıyor: {x}", not_readable: "{x} okunamadı",
-    src_blocks: "pencere", src_daily: "günlük", src_scan: "oturumlar", src_quotas: "kotalar", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "işler", src_agents: "ajanlar", src_stop_files: "anahtarlar", src_fallback: "yedekler",
+    src_blocks: "pencere", src_daily: "günlük", src_scan: "oturumlar", src_quotas: "kotalar", src_antigravity: "Antigravity", src_multica: "Multica", src_issues: "işler", src_agents: "ajanlar", src_stop_files: "anahtarlar", src_reminders: "hatırlatmalar", src_fallback: "yedekler",
     other: "Diğer", min_ago: "{n} dk önce", h_ago: "{n} saat önce", d_ago: "{n} gün önce", in_h: "{h} sa {m} dk", in_m: "{m} dk", in_d: "{d} gün {h} sa",
     adv: {
       window_fills: ["Claude penceresi bu hızla {at|loc} dolar; sıfırlanma {end}.", "Şimdiye kadar {usd}, saatte {per_hour}; tavan tahmini {cap}. Gerçek değer uygulamada."],
@@ -1050,7 +1077,11 @@ const I18N = {
   },
 };
 Object.assign(I18N.en, {
-  nav_label: "Sections", day_none_left: "Nothing left today.", day_show_past: "Earlier today ({n})", day_hide_past: "Hide earlier today", v_move: "Move", v_change: "Change", k_toggle: "Single-key shortcuts (1–5, R)", notes_more_none: "No other notes.", cal_week: "Week", cal_month: "Month", cal_today: "Today", cal_prev: "Previous", cal_next: "Next", cal_label: "Reset calendar", today_w: "Today", tomorrow: "Tomorrow", yesterday: "Yesterday",
+  nav_label: "Sections", rm_title: "Reminders", rm_help: "A notification on this Mac when a quota still has unused room and its reset is near. Each step fires once per reset; the page does not need to be open.",
+  rm_on: "Send reminders", rm_min: "Remind when at least this % is unused", rm_steps: "Remind this long before the reset", rm_short: "Also for 5-hour and daily windows (frequent)", rm_test: "Send a test notification",
+  rm_d: "{n} d", rm_h: "{n} h", rm_next: "Watched now", rm_sent: "Sent", rm_unused: "{p} unused", rm_none: "No quota with at least {p} unused has a reset coming.", rm_wait: "The first check runs within five minutes.",
+  rm_on_ok: "Reminders on.", rm_off_ok: "Reminders off.", rm_saved: "Reminder settings saved.", rm_test_ok: "Test notification sent; it should appear in the corner of the screen.", rm_need_step: "Pick at least one time.",
+  g_unused: "Unused before its reset: {x}, resets in {d}", day_none_left: "Nothing left today.", day_show_past: "Earlier today ({n})", day_hide_past: "Hide earlier today", v_move: "Move", v_change: "Change", k_toggle: "Single-key shortcuts (1–5, R)", notes_more_none: "No other notes.", cal_week: "Week", cal_month: "Month", cal_today: "Today", cal_prev: "Previous", cal_next: "Next", cal_label: "Reset calendar", today_w: "Today", tomorrow: "Tomorrow", yesterday: "Yesterday",
   ev_claude_5h: "Claude's 5-hour window closes", ev_claude_5h_past: "Claude's 5-hour window closed · {usd}", ev_claude_fill: "Claude's window fills at this pace", ev_fill_s: "fills", ev_claude_week: "Claude's weekly limit resets",
   ev_codex: "Codex {w} limit resets", ev_agy: "Antigravity {a} · {g} {w} resets", ev_or: "OpenRouter free requests reset", ev_return: "{a} returns to its own model", ev_open: "{x} quota reopens",
   day_spend: "Claude spend {v}", day_none: "No resets or returns on this day.", cal_tone: "shade: that day's Claude spend", cal_fb: "fallback returns", no_weekly: "Claude's weekly reset is not entered yet; add it in Settings.",
@@ -1068,7 +1099,11 @@ Object.assign(I18N.en, {
   no_fb_t: "No fallback chains yet.", app_saved: "Claude percentages saved.",
 });
 Object.assign(I18N.tr, {
-  nav_label: "Bölümler", day_none_left: "Bugün için kalan bir şey yok.", day_show_past: "Bugün geçenler ({n})", day_hide_past: "Bugün geçenleri gizle", v_move: "Geçir", v_change: "Değiştir", k_toggle: "Tek tuşla kısayollar (1–5, R)", notes_more_none: "Başka not yok.", cal_week: "Hafta", cal_month: "Ay", cal_today: "Bugün", cal_prev: "Önceki", cal_next: "Sonraki", cal_label: "Yenilenme takvimi", today_w: "Bugün", tomorrow: "Yarın", yesterday: "Dün",
+  nav_label: "Bölümler", rm_title: "Hatırlatmalar", rm_help: "Bir kotada kullanılmamış yer varken yenilenme yaklaşınca bu Mac'e bildirim gelir. Her adım bir yenilenme için bir kez çalar; sayfanın açık olması gerekmez.",
+  rm_on: "Hatırlatma gönder", rm_min: "En az bu kadar % kullanılmamışsa", rm_steps: "Yenilenmeden ne kadar önce", rm_short: "5 saatlik ve günlük pencereler için de (sık çalar)", rm_test: "Deneme bildirimi gönder",
+  rm_d: "{n} gün", rm_h: "{n} saat", rm_next: "Şu an izlenenler", rm_sent: "Gönderilenler", rm_unused: "{p} kullanılmadı", rm_none: "En az {p} kullanılmamış ve yenilenmesi yaklaşan kota yok.", rm_wait: "İlk kontrol beş dakika içinde yapılır.",
+  rm_on_ok: "Hatırlatmalar açık.", rm_off_ok: "Hatırlatmalar kapalı.", rm_saved: "Hatırlatma ayarları kaydedildi.", rm_test_ok: "Deneme bildirimi gönderildi; ekranın köşesinde görünmesi gerekir.", rm_need_step: "En az bir zaman seç.",
+  g_unused: "Yenilenmeden önce kullanılmayan: {x}, {d} sonra yenileniyor", day_none_left: "Bugün için kalan bir şey yok.", day_show_past: "Bugün geçenler ({n})", day_hide_past: "Bugün geçenleri gizle", v_move: "Geçir", v_change: "Değiştir", k_toggle: "Tek tuşla kısayollar (1–5, R)", notes_more_none: "Başka not yok.", cal_week: "Hafta", cal_month: "Ay", cal_today: "Bugün", cal_prev: "Önceki", cal_next: "Sonraki", cal_label: "Yenilenme takvimi", today_w: "Bugün", tomorrow: "Yarın", yesterday: "Dün",
   ev_claude_5h: "Claude 5 saatlik pencere kapanır", ev_claude_5h_past: "Claude 5 saatlik pencere kapandı · {usd}", ev_claude_fill: "Claude penceresi bu hızla dolar", ev_fill_s: "dolar", ev_claude_week: "Claude haftalık limiti sıfırlanır",
   ev_codex: "Codex {w} limiti yenilenir", ev_agy: "Antigravity {a} · {g} {w} yenilenir", ev_or: "OpenRouter ücretsiz istekleri sıfırlanır", ev_return: "{a} kendi modeline döner", ev_open: "{x} kotası açılır",
   day_spend: "Claude harcaması {v}", day_none: "Bu gün yenilenme ya da geri dönüş yok.", cal_tone: "ton: o günkü Claude harcaması", cal_fb: "yedekten dönüş", no_weekly: "Claude'un haftalık sıfırlanması henüz girilmedi; Ayarlar'dan ekle.",
@@ -1529,6 +1564,8 @@ function renderFirst(v) {
   if (!rest.some(x => x.st === "empty" || x.st === "low")) G.push(["", "ok", esc(t("lead_rest_ok"))]);
   const on = fb ? fb.rows.filter(r => r.on != null) : [];
   if (fb) G.push(on.length ? ["fb", "swap", t("lead_bench_on", {n: on.length, x: on.map(r => `<b>${esc(r.name)}</b>`).join(", ")})] : ["", "swap", esc(t("lead_bench_none"))]);
+  const soon = (v.reminders?.watch || []).filter(w => w.hours <= 24);
+  if (soon.length) G.push(["low", "clock", t("g_unused", {x: soon.slice(0, 2).map(w => `<b>${esc(w.name)}</b> ${esc(pc(w.left))}`).join(", "), d: esc(until(new Date(Date.now() + soon[0].hours * 3600e3)))})]);
   const gl = G.map(([c, ic, h]) => `<li class="${c}">${icon(ic)}<span>${h}</span></li>`).join("");
   if ($("glance").innerHTML !== gl) $("glance").innerHTML = gl;
   safe(renderCal);
@@ -1963,9 +2000,39 @@ function renderSettings(v) {
   const N = srcKeys(v);
   $("sources").innerHTML = N.map(k => { const x = v.sources[k];
     return `<li><span>${esc(t("src_" + k))}</span>${!x ? badge("off", t("src_wait")) : x.ok ? badge("ok", t("src_ok", {t: hm(x.at)})) : badge("empty", t("status_off"))}${x && !x.ok ? `<span class="e">${esc(x.error)}</span>` : ""}</li>`; }).join("");
+  renderReminders(v);
   $("keys_on").checked = F.keys !== false;
   $("keys").innerHTML = `<dt><kbd aria-hidden="true">1</kbd> … <kbd aria-hidden="true">5</kbd></dt><dd>${esc(t("k_views"))}</dd><dt><kbd aria-hidden="true">R</kbd></dt><dd>${esc(t("k_reload"))}</dd><dt><kbd aria-hidden="true">Esc</kbd></dt><dd>${esc(t("k_esc"))}</dd>`;
 }
+// reminders: unused quota close to its reset, sent as macOS notifications by the server
+const RM_STEPS = [168, 72, 48, 24, 12, 6, 3, 1];
+const stepName = h => h >= 24 ? t("rm_d", {n: h / 24}) : t("rm_h", {n: h});
+function renderReminders(v) {
+  const r = v.reminders, box = $("remind_set");
+  if (!r) { $("rm_watch").innerHTML = `<div class="state">${icon("clock")}<p>${esc(t("rm_wait"))}</p></div>`; return; }
+  const c = r.settings;
+  const busy = $("rm_form").contains(document.activeElement);
+  $("rm_on").checked = c.on;
+  box.querySelector("#rm_form").toggleAttribute("inert", !c.on); box.querySelector("#rm_form").style.opacity = c.on ? "" : ".5";
+  if (!busy) {
+    $("rm_min").value = c.min_left; $("rm_short").checked = c.short_windows;
+    const all = [...new Set([...RM_STEPS, ...c.steps])].sort((a, b) => b - a);
+    $("rm_steps").innerHTML = all.map(h => `<label><input type="checkbox" value="${h}" ${c.steps.includes(h) ? "checked" : ""}>${esc(stepName(h))}</label>`).join("");
+  }
+  const watch = r.watch.slice(0, 6), log = r.log.slice().reverse();
+  $("rm_watch").innerHTML = `<p class="rm-h">${esc(t("rm_next"))}</p>`
+    + (watch.length ? `<ul class="rm-list">${watch.map(w => `<li>${ptile(w.name, true)}<span>${esc(w.name)} · ${esc(WIN(w.window))} <b>${esc(t("rm_unused", {p: pc(w.left)}))}</b></span><span class="aside">${esc(t("in_x", {d: until(new Date(Date.now() + w.hours * 3600e3))}))}</span></li>`).join("")}</ul>`
+      : `<p class="set-help">${esc(t("rm_none", {p: pc(c.min_left)}))}</p>`)
+    + (log.length ? `<p class="rm-h">${esc(t("rm_sent"))}</p><ul class="rm-list">${log.map(l => `<li>${icon("clock", "sm")}<span>${esc(l.text)}</span><span class="aside">${esc(when(l.at))}</span></li>`).join("")}</ul>` : "");
+}
+$("rm_on").onchange = e => act("/api/reminders", {on: e.target.checked}, e.target.checked ? t("rm_on_ok") : t("rm_off_ok"));
+$("rm_form").onsubmit = e => {
+  e.preventDefault();
+  const steps = [...$("rm_steps").querySelectorAll("input:checked")].map(i => +i.value);
+  if (!steps.length) { toast(t("rm_need_step"), {kind: "err"}); return; }
+  act("/api/reminders", {min_left: $("rm_min").value, steps, short_windows: $("rm_short").checked}, t("rm_saved"));
+};
+$("rm_test").onclick = () => act("/api/reminders/test", {}, t("rm_test_ok"));
 $("keys_on").onchange = e => { F.keys = e.target.checked; save(); };
 $("app_form").onsubmit = e => { e.preventDefault(); act("/api/claude", {five_hour: $("ae5").value, weekly: $("aew").value, weekly_model: $("aem").value, weekly_reset: $("aer").value ? new Date($("aer").value).toISOString() : ""}, t("app_saved")); };
 
@@ -2042,7 +2109,7 @@ function wireEditor(fb, v) {
 }
 
 // ---------- chrome ----------
-const srcKeys = v => ["blocks", "daily", "scan", "quotas", "antigravity", "multica", "issues", "agents", "fallback", "stop_files"].filter(k => k in v.sources || ["blocks", "daily", "scan", "quotas"].includes(k));
+const srcKeys = v => ["blocks", "daily", "scan", "quotas", "antigravity", "multica", "issues", "agents", "fallback", "stop_files", "reminders"].filter(k => k in v.sources || ["blocks", "daily", "scan", "quotas"].includes(k));
 function renderChrome(v) {
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-i]").forEach(e => e.textContent = t(e.dataset.i));
