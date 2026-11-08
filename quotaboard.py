@@ -386,6 +386,163 @@ def src_quotas():
     return out
 
 
+# ---------- reminders: unused quota close to its reset ----------
+
+REMIND_FILE = os.path.join(CONFIG_DIR, "reminders.json")  # settings and what was already sent
+REMIND_DEFAULT = {"on": True, "min_left": 25, "steps": [72, 24, 6, 1], "short_windows": False}
+WINDOW_H = {"5h": 5, "daily": 24, "weekly": 168, "monthly": 720}
+TR = (os.environ.get("LANG") or "").lower().startswith("tr")
+
+
+def remind_state():
+    try:
+        st = json.load(open(REMIND_FILE, encoding="utf-8"))
+    except (OSError, ValueError):
+        st = {}
+    st["settings"] = {**REMIND_DEFAULT, **(st.get("settings") or {})}
+    st.setdefault("sent", {})
+    st.setdefault("log", [])
+    return st
+
+
+def remind_save(st):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    tmp = REMIND_FILE + ".tmp"
+    json.dump(st, open(tmp, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    os.replace(tmp, REMIND_FILE)
+
+
+def remind_quotas():
+    """Every quota with a known reset: id, name, window, % left, reset time."""
+    with LOCK:
+        q, agy = DATA.get("quotas") or {}, DATA.get("antigravity") or {}
+    out = []
+    for r in (q.get("codex") or {}).get("rows", []):
+        if r.get("reset") and r.get("left") is not None:
+            out.append({"id": f"codex|{r['window']}", "name": "Codex", "window": r["window"], "left": r["left"], "reset": r["reset"]})
+    for name, a in agy.items():
+        for r in a.get("rows", []):
+            left, w = pct_value(r["left"]), limit_name(r["limit"])
+            group = r["group"].replace("Claude and GPT models", "Claude / GPT").replace("Gemini Models", "Gemini").replace("Gemini 4 Argon", "Argon")
+            if r.get("reset") and left is not None:
+                out.append({"id": f"agy|{name}|{r['group']}|{w}", "name": f"Antigravity {name} · {group}", "window": w, "left": left, "reset": r["reset"]})
+    # Claude's weekly limit: only from the app's numbers typed in, and only while that reading belongs to this week
+    m = (q.get("claude") or {}).get("manual") or {}
+    if m.get("weekly") is not None and m.get("weekly_reset") and m.get("at"):
+        base, at, wk = ts(m["weekly_reset"]), ts(m["at"]), timedelta(days=7)
+        nxt = base + wk * max(0, -(-(now() - base) // wk))
+        if nxt - wk <= at:  # typed in after the last reset
+            out.append({"id": "claude|weekly", "name": "Claude", "window": "weekly", "left": 100 - m["weekly"], "reset": nxt.isoformat(), "typed": True})
+    return out
+
+
+def when_text(d):
+    t = local(d)
+    days_tr = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
+    return f"{days_tr[t.weekday()]} {t.strftime('%H:%M')}" if TR else t.strftime("%a %H:%M")
+
+
+def left_text(h):
+    if h >= 48:
+        return f"{round(h / 24)} gün" if TR else f"{round(h / 24)} days"
+    if h >= 1.5:
+        return f"{round(h)} saat" if TR else f"{round(h)} hours"
+    return f"{max(1, round(h * 60))} dakika" if TR else f"{max(1, round(h * 60))} minutes"
+
+
+def remind_text(x, h):
+    title = "Kullanılmayan kota" if TR else "Unused quota"
+    body = (f"{x['name']}: %{round(x['left'])} kullanılmadı, {left_text(h)} sonra ({when_text(ts(x['reset']))}) yenileniyor."
+            if TR else f"{x['name']}: {round(x['left'])}% unused, resets in {left_text(h)} ({when_text(ts(x['reset']))}).")
+    if x.get("typed"):
+        body += " (uygulamadan girdiğin değere göre)" if TR else " (from the numbers you typed in)"
+    return title, body
+
+
+def notify(title, body):
+    """A macOS notification; quietly does nothing elsewhere."""
+    if sys.platform != "darwin":
+        return False
+    esc_ = lambda v: v.replace("\\", "\\\\").replace('"', '\\"')
+    script = f'display notification "{esc_(body)}" with title "quotaboard" subtitle "{esc_(title)}" sound name "Glass"'
+    try:
+        subprocess.run(["osascript", "-e", script], timeout=15, capture_output=True)
+        return True
+    except Exception:
+        return False
+
+
+def remind_due(st, quotas, t_now):
+    """(quota, step, hours left) for every reminder that is due now and not sent yet. Only the nearest step fires:
+    a server that was off for a day does not send the 3-day and 1-day reminders at once."""
+    cfg, due = st["settings"], []
+    steps = sorted({float(v) for v in cfg["steps"] if float(v) > 0}, reverse=True)
+    for x in quotas:
+        h = (ts(x["reset"]) - t_now).total_seconds() / 3600
+        win = WINDOW_H.get(x["window"], 168)
+        if h <= 0 or x["left"] < cfg["min_left"] or (win <= 24 and not cfg["short_windows"]):
+            continue
+        fit = [s for s in steps if s < win and h <= s]
+        if not fit:
+            continue
+        step = min(fit)
+        key = f"{x['id']}|{x['reset'][:16]}|{step:g}"
+        if key not in st["sent"]:
+            due.append((x, step, h, key))
+    return due
+
+
+def src_reminders():
+    st = remind_state()
+    quotas, t_now = remind_quotas(), now()
+    if st["settings"]["on"]:
+        for x, step, h, key in remind_due(st, quotas, t_now):
+            title, body = remind_text(x, h)
+            notify(title, body)
+            st["sent"][key] = t_now.isoformat()
+            st["log"] = (st["log"] + [{"at": t_now.isoformat(), "id": x["id"], "text": body}])[-30:]
+    # forget keys of resets that are long past
+    st["sent"] = {k: v for k, v in st["sent"].items() if (t_now - ts(v)).days < 40}
+    remind_save(st)
+    cfg = st["settings"]
+    watch = []
+    for x in quotas:
+        h = (ts(x["reset"]) - t_now).total_seconds() / 3600
+        if h > 0 and x["left"] >= cfg["min_left"] and (WINDOW_H.get(x["window"], 168) > 24 or cfg["short_windows"]):
+            watch.append({**x, "hours": round(h, 2)})
+    return {"settings": cfg, "log": st["log"][-10:], "watch": sorted(watch, key=lambda w: w["hours"])}
+
+
+def act_reminders(body):
+    st = remind_state()
+    cfg = st["settings"]
+    if "on" in body:
+        cfg["on"] = bool(body["on"])
+    if "short_windows" in body:
+        cfg["short_windows"] = bool(body["short_windows"])
+    if "min_left" in body:
+        v = float(body["min_left"])
+        if not 0 <= v <= 100:
+            raise ValueError("min_left is between 0 and 100")
+        cfg["min_left"] = v
+    if "steps" in body:
+        steps = sorted({float(v) for v in body["steps"]}, reverse=True)
+        if not steps or any(v <= 0 or v > 24 * 31 for v in steps) or len(steps) > 6:
+            raise ValueError("steps are 1 to 6 hour values between 0 and 744")
+        cfg["steps"] = steps
+    remind_save(st)
+    put("reminders", src_reminders())
+    return {"message": "Hatırlatma ayarları kaydedildi." if TR else "Reminder settings saved."}
+
+
+def act_reminder_test(body):
+    ok = notify("Deneme" if TR else "Test", "Bildirimler çalışıyor. Kullanılmayan kota yenilenmeye yaklaşınca böyle haber verilecek." if TR
+                else "Notifications work. You will hear like this when unused quota nears its reset.")
+    if not ok:
+        raise RuntimeError("notifications work only on macOS")
+    return {"message": "Deneme bildirimi gönderildi." if TR else "Test notification sent."}
+
+
 LEVELS = ("low", "medium", "high", "xhigh", "max", "ultra")
 
 
@@ -592,7 +749,7 @@ def src_stop_files():
 
 SOURCES = [("blocks", src_blocks, 60), ("scan", src_scan, 60), ("daily", src_daily, 180), ("quotas", src_quotas, 300),
            ("catalog", src_catalog, 6 * 3600),
-           ("stop_files", src_stop_files, 30)]
+           ("stop_files", src_stop_files, 30), ("reminders", src_reminders, 300)]
 if CFG["antigravity"]:
     SOURCES.append(("antigravity", src_antigravity, 300))
 if CFG.get("multica"):
@@ -817,6 +974,7 @@ def view():
            "history": HIST.since(72),
            "options": {"catalog": catalog_for(agents, runs, D.get("catalog") or {})}}
     out["fallback"] = fallback_view(D.get("fallback"), agents, runtimes, live, t_now)
+    out["reminders"] = D.get("reminders")
     out["today_ccusage"] = next((d["usd"] for d in out["daily"] if d["day"] == today), None)
     out["advice"] = advice(out, runs, issues, t_now)
     return out
@@ -1081,6 +1239,17 @@ def act_claude_percentages(body):
             if not 0 <= val <= 100:
                 raise ValueError("a percentage is between 0 and 100")
             vals[k] = val
+    # the weekly reset moment the app shows; the page repeats it every seven days. Kept across saves.
+    wr = body.get("weekly_reset")
+    if wr:
+        vals["weekly_reset"] = datetime.fromisoformat(str(wr).replace("Z", "+00:00")).isoformat()
+    elif wr is None:
+        try:
+            old = json.load(open(MANUAL, encoding="utf-8")).get("weekly_reset")
+        except (OSError, ValueError):
+            old = None
+        if old:
+            vals["weekly_reset"] = old
     os.makedirs(CONFIG_DIR, exist_ok=True)
     json.dump({**vals, "at": now().isoformat()}, open(MANUAL, "w", encoding="utf-8"), indent=1)
     with LOCK:
@@ -1165,7 +1334,7 @@ def act_fallback_chain(body):
 
 ACTIONS = {"/api/fallback/switch": act_fallback_switch, "/api/fallback/restore": act_fallback_restore,
            "/api/fallback/chain": act_fallback_chain, "/api/claude": act_claude_percentages, "/api/model": act_model, "/api/cancel": act_cancel,
-           "/api/stop-file": act_stop_file}
+           "/api/stop-file": act_stop_file, "/api/reminders": act_reminders, "/api/reminders/test": act_reminder_test}
 
 
 class Handler(BaseHTTPRequestHandler):
