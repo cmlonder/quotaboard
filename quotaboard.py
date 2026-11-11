@@ -1011,7 +1011,21 @@ def fallback_view(fb, agents, runtimes, live, t_now):
     return {"rows": rows, "events": fb.get("events") or [], "editable": bool((CFG.get("multica") or {}).get("agent_files")),
             "runtimes": [{"id": rid, "name": r["name"], "provider": r["provider"], "online": r["online"], "models": sorted(models.get(rid, []))}
                          for rid, r in sorted(rts.items(), key=lambda x: x[1]["name"])],
-            "agents_without": sorted(a["name"] for a in agents if not any(r["id"] == a["id"] for r in rows) and a.get("file"))}
+            "agents_without": sorted(a["name"] for a in agents if not any(r["id"] == a["id"] for r in rows) and a.get("file")),
+            "harvest": harvest_view(fb.get("hasat"), t_now)}
+
+
+def harvest_view(h, t_now):
+    """The watchdog's quota harvest (optional `hasat` in the status contract): pools that reset soon with much left,
+    what it started or moved for them, and why it did nothing."""
+    if not isinstance(h, dict):
+        return None
+    pools = [{"name": p.get("ad"), "left": p.get("kalan"), "reset": p.get("reset"), "estimate": bool(p.get("tahmini"))}
+             for p in h.get("havuzlar") or [] if p.get("hasatta") and ts(p.get("reset")) and ts(p["reset"]) > t_now]
+    a = h.get("ayar") or {}
+    return {"on": not h.get("kapali") and a.get("acik", True), "pools": pools, "waiting": h.get("bekleyen") or [],
+            "moves": (h.get("hareketler") or [])[-5:], "at": h.get("zaman"), "error": h.get("hata"),
+            "limits": {"hours": a.get("saat"), "pct": a.get("yuzde"), "short_hours": a.get("kisa_saat"), "short_pct": a.get("kisa_yuzde")}}
 
 
 def model_mode():

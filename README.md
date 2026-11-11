@@ -158,6 +158,7 @@ quotaboard does not switch agents on its own. The page has to be open for anythi
 
 - `on` is the index of the fallback the agent is on now, or `null` when it runs its own model.
 - `switch_command` moves the agent to fallback `{n}`, counted from 1. `restore_command` moves it back to its own model.
+- Optional `hasat` (quota harvest): the watchdog's view of pools that reset soon with much left. `havuzlar` lists each pool (`ad`, `kalan` %, `reset`, `hasatta`, `tahmini`), `bekleyen` why it did nothing, `hareketler` what it started or moved, `ayar` its thresholds, `kapali` when it is switched off. The Fallbacks view shows one line from it; a `stop_files` entry can switch it off.
 
 When `agent_files` is set, the chain is the agent file's `fallback:` front-matter line (a JSON list of `runtime_id`, `model` and optional `thinking_level`), and the page can edit it. The line is the watchdog's: nothing is pushed to Multica.
 

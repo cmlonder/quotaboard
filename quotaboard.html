@@ -881,6 +881,7 @@ dialog h3 { font-size: 16px; margin-bottom: 8px; }
       <!-- ============ fallbacks ============ -->
       <section class="view" id="v-fallbacks" aria-labelledby="view_title" hidden>
         <p class="view-lead" id="fb_lead"></p>
+        <p class="view-lead" id="fb_harvest" hidden></p>
         <div class="card pane" id="fb_block"><div class="block-head"><h3 data-i="fallbacks"></h3><span class="aside" id="fb_aside"></span></div><div id="fallbacks"></div><div class="fb-add" id="fb_add"></div></div>
         <div class="card pane" style="margin-top:20px"><div class="block-head"><h3 data-i="fb_moves"></h3></div><div id="fb_events"></div></div>
       </section>
@@ -1230,6 +1231,8 @@ Object.assign(I18N.en, {
   fb_lead_none: "Every agent is on its own model. When a quota runs out, the watchdog moves the agent one step down its chain.", fb_lead_on: "{n} on a fallback right now. Return them here once their own quota reopens, or let the watchdog do it.",
   cap_note: "Claude's window cap is an estimate: {c} · {s}.", app_go: "Enter app %", nothing_t: "Nothing to flag right now.", nothing_d: "Notes appear here when a rule spots waste or a quota at risk.",
   no_fb_t: "No fallback chains yet.", app_saved: "Claude percentages saved.",
+  hv_off: "Quota harvest is off.", hv_on: "Quota harvest: {x}.", hv_pool: "{n}, {p}% left, resets {t}", hv_est: "(estimate)",
+  hv_last: "Last started or moved: {x}.", hv_idle: "Quota harvest is on: nothing resets soon with much left (weekly: under {h} h and over {p}%; 5-hour: under {sh} h and over {sp}%).",
 });
 Object.assign(I18N.tr, {
   nav_label: "Bölümler", tl_empty: "bitti", h_empty1: "Bir kota bitti.", h_emptyn: "{n} kota bitti.", h_more: "{n} tanesi daha bitecek.", rw_title: "Ne zaman biter, ne zaman dolar", rw_note: "Bütün pencereler tek zaman ekseninde: son saatler, sonra bu hızla gidiş.", rw_48: "48 saat", rw_168: "7 gün",
@@ -1259,6 +1262,8 @@ Object.assign(I18N.tr, {
   fb_lead_none: "Bütün ajanlar kendi modelinde. Bir kota bitince bekçi ajanı zincirinde bir adım aşağı geçirir.", fb_lead_on: "Şu an {n} ajan yedekte. Kendi kotası açılınca buradan geri al ya da bekçiye bırak.",
   cap_note: "Claude pencere tavanı bir tahmin: {c} · {s}.", app_go: "Uygulama %'si gir", nothing_t: "Şu an dikkat edilecek bir şey yok.", nothing_d: "Bir kural israf ya da riskli bir kota görünce burada not düşer.",
   no_fb_t: "Henüz yedek zinciri yok.", app_saved: "Claude yüzdeleri kaydedildi.",
+  hv_off: "Kota hasadı kapalı.", hv_on: "Kota hasadı: {x}.", hv_pool: "{n}, %{p} duruyor, {t} yenileniyor", hv_est: "(tahmini)",
+  hv_last: "Son başlatılan ya da taşınan: {x}.", hv_idle: "Kota hasadı açık: yakında yenilenip çok kotası duran yok (haftalık: {h} saatten az ve %{p}'ten fazla; 5 saatlik: {sh} saatten az ve %{sp}'ten fazla).",
 });
 let LANG = "en";
 try { LANG = localStorage.getItem("quotaboard-lang") || ((navigator.language || "").toLowerCase().startsWith("tr") ? "tr" : "en"); } catch (e) {}
@@ -2313,6 +2318,15 @@ function renderFallbacks(v) {
   const onNow = fb.rows.filter(r => r.on != null).length;
   $("fb_lead").textContent = onNow ? t("fb_lead_on", {n: onNow}) : t("fb_lead_none");
   $("fb_aside").textContent = t("fb_aside", {n: fb.rows.length, m: onNow});
+  const hv = fb.harvest, hp = $("fb_harvest");
+  hp.hidden = !hv;
+  if (hv) {
+    const L = hv.limits || {};
+    hp.textContent = !hv.on ? t("hv_off") : hv.pools.length
+      ? t("hv_on", {x: hv.pools.map(p => t("hv_pool", {n: p.name, p: Math.round(p.left), t: when(p.reset)}) + (p.estimate ? " " + t("hv_est") : "")).join("; ")})
+        + " " + (hv.waiting[0] || (hv.moves.length ? t("hv_last", {x: hv.moves[hv.moves.length - 1].is || hv.moves[hv.moves.length - 1].ajan}) : ""))
+      : t("hv_idle", {h: L.hours, p: L.pct, sh: L.short_hours, sp: L.short_pct});
+  }
   const step = (e, label, cur) => {
     const st = e.closed_until ? `<span class="st" style="color:var(--pen-red)">${icon("empty", "sm")} ${esc(t("fb_closed", {t: when(e.closed_until)}))}</span>` : !e.online ? `<span class="st muted">${icon("off", "sm")} ${esc(t("fb_offline"))}</span>` : "";
     return `<span class="fb-step ${cur ? "cur" : ""} ${e.closed_until ? "closed" : ""}"><span class="r">${ptile(e.provider || e.runtime, true)}${esc(label)} · ${esc(e.runtime)}</span><span class="m">${esc(e.model)}${e.thinking ? " / " + esc(e.thinking) : ""}</span>${st}</span>`;
