@@ -14,7 +14,7 @@ Sources, each refreshed in its own background thread:
   Anthropic's price ratios (input 1, output 5, cache write 1.25, cache read 0.1) times each model's unit price,
   fitted from ccusage's own per-model cost, so the totals agree with ccusage.
 - Antigravity CLI wrappers (`<cmd> -p /usage`); Codex app-server `account/rateLimits/read`; OpenRouter /api/v1/key
-  with opencode's key; the Claude plan tier from ~/.claude.json. Claude's plan percentages are only shown in the
+  with opencode's key; Copilot's monthly credits from `gh api /copilot_internal/user`; the Claude plan tier from ~/.claude.json. Claude's plan percentages are only shown in the
   Claude app; the page lets you type them in.
 - Multica (optional): runtimes, agents and runs from its CLI. A Multica session's Claude transcript lives in
   ~/.claude/projects/*multica-workspaces*…-<issue>-<last 12 hex of the run id>-worktree, which ties it to its run.
@@ -264,15 +264,36 @@ def src_issues():
         off += len(page)
 
 
+class SignedOut(RuntimeError):
+    """The account's wrapper has no login: exit code 41, "not authenticated, login required" on stderr."""
+
+
+def agy_run(args, timeout=90):
+    r = subprocess.run([x(a) for a in args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    err = (r.stderr or r.stdout).strip()
+    if r.returncode == 41 or "not authenticated" in err.lower():
+        raise SignedOut(err[:200] or "not authenticated, login required")
+    if r.returncode != 0:
+        raise RuntimeError(err[:300] or f"exit {r.returncode}")
+    return r.stdout
+
+
 def agy_usage(cmd):
-    out = sh([cmd, "-p", "/usage", "--print-timeout", "30s"], timeout=90)
+    """Rows of `/usage`: two groups since Nov 2026, "Gemini Models" (Carbon and Argon included) and "Claude and GPT
+    models", each weekly + 5-hour. A 5-hour row reads `disabled` instead of a percentage once its group's weekly limit
+    is used up: `left` stays as printed, `state` says what it means and `blocked_until` is the weekly reset."""
+    out = agy_run([cmd, "-p", "/usage", "--print-timeout", "30s"])
     rows = []
     for line in out.splitlines():
         p = line.split("\t")
         if len(p) >= 3:
-            rows.append({"group": p[0], "limit": p[1], "left": p[2], "reset": p[3].strip() if len(p) > 3 else ""})
+            rows.append({"group": p[0], "limit": p[1], "left": p[2].strip(), "reset": p[3].strip() if len(p) > 3 else ""})
     if not rows:
         raise RuntimeError("empty quota table (not signed in?)")
+    weekly = {r["group"]: r["reset"] for r in rows if limit_name(r["limit"]) == "weekly"}
+    for r in rows:
+        if r["left"].lower() == "disabled":
+            r["state"], r["blocked_until"] = "weekly_done", weekly.get(r["group"], "")
     return rows
 
 
@@ -281,6 +302,8 @@ def src_antigravity():
     for acc in CFG["antigravity"]:
         try:
             out[acc["name"]] = {"rows": agy_usage(acc["command"])}
+        except SignedOut as e:  # no login on this wrapper: said as such, never read as 0%
+            out[acc["name"]] = {"error": str(e)[:200], "signed_out": True}
         except Exception as e:  # one account failing must not hide the others
             out[acc["name"]] = {"error": str(e)[:200]}
         out[acc["name"]].update({"command": acc["command"], "note": acc.get("note", ""), "runtimes": acc.get("runtimes", [])})
@@ -349,6 +372,23 @@ def openrouter_limits():
     return {"free_tier": bool(d.get("is_free_tier")), "rows": rows, "usage_month": d.get("usage_monthly", 0)}
 
 
+def copilot_limits():
+    """Copilot's monthly premium-interaction credits, asked through the gh CLI (it keeps the token; nothing is read here)."""
+    d = json.loads(sh(["gh", "api", "/copilot_internal/user"], timeout=40))
+    pi = (d.get("quota_snapshots") or {}).get("premium_interactions") or {}
+    if not pi:
+        raise RuntimeError("no premium_interactions quota on this account")
+    limit, rem = pi.get("entitlement") or 0, pi.get("remaining")
+    left = 100 if pi.get("unlimited") else pi.get("percent_remaining")
+    if left is None and limit:
+        left = round(100 * (rem or 0) / limit, 1)
+    reset = d.get("quota_reset_date_utc") or ""
+    return {"plan": d.get("copilot_plan") or "", "sku": d.get("access_type_sku") or "",
+            "models": ["auto"],  # on the individual plan a model picked by name answers "not available"
+            "rows": [{"kind": "premium_interactions", "window": "monthly", "left": left, "remaining": rem, "limit": limit,
+                      "unlimited": bool(pi.get("unlimited")), "reset": ts(reset).isoformat() if reset else ""}]}
+
+
 def claude_plan():
     try:
         acc = json.load(open(os.path.expanduser("~/.claude.json"))).get("oauthAccount") or {}
@@ -374,6 +414,8 @@ def src_quotas():
                 jobs.append(("openrouter", openrouter_limits))
         except (OSError, ValueError):
             pass
+    if shutil.which("gh") and CFG.get("copilot", True):
+        jobs.append(("copilot", copilot_limits))
     for name, fn in jobs:
         try:
             out[name] = fn()
@@ -381,6 +423,7 @@ def src_quotas():
             out[name] = {"error": f"{type(e).__name__}: {e}"[:200]}
     readings = [(f"codex|{r['window']}", r["left"]) for r in (out.get("codex") or {}).get("rows", [])]
     readings += [(f"openrouter|{r['kind']}", r["left"]) for r in (out.get("openrouter") or {}).get("rows", [])]
+    readings += [(f"copilot|{r['window']}", r["left"]) for r in (out.get("copilot") or {}).get("rows", [])]
     HIST.record(readings)
     out["installed"] = {k: bool(shutil.which(k)) for k in ("claude", "codex", "opencode", "gemini", "agy", "ccusage", "multica")}
     return out
@@ -420,10 +463,13 @@ def remind_quotas():
     for r in (q.get("codex") or {}).get("rows", []):
         if r.get("reset") and r.get("left") is not None:
             out.append({"id": f"codex|{r['window']}", "name": "Codex", "window": r["window"], "left": r["left"], "reset": r["reset"]})
+    for r in (q.get("copilot") or {}).get("rows", []):
+        if r.get("reset") and r.get("left") is not None:
+            out.append({"id": f"copilot|{r['window']}", "name": "Copilot", "window": r["window"], "left": r["left"], "reset": r["reset"]})
     for name, a in agy.items():
         for r in a.get("rows", []):
             left, w = pct_value(r["left"]), limit_name(r["limit"])
-            group = r["group"].replace("Claude and GPT models", "Claude / GPT").replace("Gemini Models", "Gemini").replace("Gemini 4 Argon", "Argon")
+            group = r["group"].replace("Claude and GPT models", "Claude / GPT").replace("Gemini Models", "Gemini")
             if r.get("reset") and left is not None:
                 out.append({"id": f"agy|{name}|{r['group']}|{w}", "name": f"Antigravity {name} · {group}", "window": w, "left": left, "reset": r["reset"]})
     # Claude's weekly limit: only from the app's numbers typed in, and only while that reading belongs to this week
@@ -549,13 +595,14 @@ LEVELS = ("low", "medium", "high", "xhigh", "max", "ultra")
 def src_catalog():
     """Which models each runtime kind offers and which thinking levels each model takes.
     Claude: a separate thinking level. Antigravity: the level is the model name's suffix (`agy models`).
-    Codex: levels per model from its local models cache. Opencode: model names only."""
+    Codex: levels per model from its local models cache, with the ones it calls legacy and the hidden ones listed.
+    Copilot: `auto` only. Opencode: model names only."""
     cat = {"claude": {"in_name": False, "models": {m: list(THINKING) for m in CLAUDE_MODELS}}}
-    cmd = next((a["command"] for a in CFG["antigravity"]), "agy" if shutil.which("agy") else None)
-    if cmd:
+    cmds = [a["command"] for a in CFG["antigravity"]] or (["agy"] if shutil.which("agy") else [])
+    for cmd in cmds:  # the first account that is signed in answers
         try:
             models = {}
-            for line in sh([cmd, "models"], timeout=90).splitlines():
+            for line in agy_run([cmd, "models"]).splitlines():
                 name = line.split("\t")[0].strip()
                 if not re.fullmatch(r"[\w.:/-]+", name):
                     continue
@@ -566,14 +613,20 @@ def src_catalog():
                     models.setdefault(name, [])
             if models:
                 cat["antigravity"] = {"in_name": True, "models": {b: sorted(l, key=LEVELS.index) for b, l in models.items()}}
+                break
         except Exception:
             pass
     try:
         d = json.load(open(os.path.expanduser("~/.codex/models_cache.json")))
-        cat["codex"] = {"in_name": False, "models": {m["slug"]: [l["effort"] for l in m.get("supported_reasoning_levels") or []]
-                                                     for m in d.get("models", []) if m.get("slug")}}
-    except (OSError, ValueError, KeyError):
+        ms = [m for m in d.get("models", []) if m.get("slug")]
+        cat["codex"] = {"in_name": False, "models": {m["slug"]: [l["effort"] for l in m.get("supported_reasoning_levels") or []] for m in ms},
+                        "legacy": [m["slug"] for m in ms if "legacy" in (m.get("description") or "").lower()],
+                        "hidden": [m["slug"] for m in ms if m.get("visibility") == "hide"],
+                        "about": {m["slug"]: m.get("description") or "" for m in ms}}
+    except (OSError, ValueError, KeyError, TypeError):
         pass
+    if shutil.which("copilot") or shutil.which("gh"):
+        cat["copilot"] = {"in_name": False, "models": {"auto": []}}  # the individual plan runs `auto` only
     if shutil.which("opencode"):
         try:
             names = [l.strip() for l in sh(["opencode", "models"], timeout=60).splitlines() if re.fullmatch(r"[\w.:/@+-]+", l.strip())]
@@ -1035,7 +1088,7 @@ def model_mode():
 
 def catalog_for(agents, runs, cat):
     """The catalog, plus whatever model an agent or run already uses, so a current value is always selectable."""
-    out = {p: {"in_name": c["in_name"], "models": {m: list(l) for m, l in c["models"].items()}} for p, c in cat.items()}
+    out = {p: {**c, "models": {m: list(l) for m, l in c["models"].items()}} for p, c in cat.items()}
     out.setdefault("claude", {"in_name": False, "models": {m: list(THINKING) for m in CLAUDE_MODELS}})
     for a in agents:
         p = a["provider"] or "other"
@@ -1121,12 +1174,14 @@ def advice(v, runs, issues, t_now):
                 agent=r["agent"], issue=r["issue_key"], minutes=r["running_minutes"])
 
     for name, acc in v["antigravity"].items():
+        if acc.get("signed_out"):
+            add("medium", "agy_login", account=name, command=acc.get("command", ""),
+                agents=[a["name"] for a in v["agents"] if a["runtime"] in acc.get("runtimes", [])])
         for row in acc.get("rows") or []:
-            if row["left"] not in ("0%", "1%"):
+            if row["left"] not in ("0%", "1%"):  # a `disabled` 5-hour row is covered by its weekly row at 0%
                 continue
-            g = row["group"].lower()
-            uses = (lambda m: "argon" in m) if "argon" in g else (lambda m: m.startswith("gemini") and "argon" not in m) \
-                if g.startswith("gemini") else (lambda m: m.startswith("claude") or m.startswith("gpt"))
+            g = row["group"].lower()  # Argon and Carbon draw on "Gemini Models"; there is no separate Argon pool
+            uses = (lambda m: m.startswith("gemini")) if g.startswith("gemini") else (lambda m: m.startswith(("claude", "gpt")))
             hit = [a["name"] for a in v["agents"] if a["runtime"] in acc.get("runtimes", []) and uses(a["model"])]
             if hit or not v["multica"]:
                 add("medium", "agy_empty", account=name, group=row["group"], window=limit_name(row["limit"]),

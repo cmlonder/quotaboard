@@ -45,9 +45,10 @@ What each part shows:
 
 - **Timeline** (Overview → Quotas → Timeline): every quota on one shared time axis (the last 18 hours and the next 6), one lane each, with what is left and when it resets.
   - **Claude**: the current 5-hour window drawn as spend inside each window, against an estimated cap. The dashed pace line marks the time it fills, and the plan tier is shown. Claude's own percentages are only shown in the Claude app; you can type them in and the page shows how old they are.
-  - **Antigravity**: every limit `agy -p /usage` reports (Gemini, Claude/GPT, Argon; 5-hour and weekly), for as many accounts as you configure. Readings are stored, so each lane builds a trace over time. When a quota falls steadily, the page projects when it runs out.
+  - **Antigravity**: every limit `agy -p /usage` reports (Gemini, which includes Carbon and Argon, and Claude/GPT; 5-hour and weekly), for as many accounts as you configure. Readings are stored, so each lane builds a trace over time. When a quota falls steadily, the page projects when it runs out.
   - **Codex**: limits from `codex app-server` (no model call).
   - **OpenRouter**: free requests and credit for the key opencode signed in with.
+  - **Copilot**: the month's premium-interaction credits (left, total, reset date) from `gh api /copilot_internal/user`; the gh CLI keeps the token, the board never reads it.
 
   Hover anywhere on the timeline to read every lane at that moment.
 - **Notes** (on Overview): plain rules, each with the reason it fired, and an action button where one applies. For example:

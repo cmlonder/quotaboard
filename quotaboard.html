@@ -22,7 +22,7 @@
   --heat-0: #eef1f6; --heat-1: #d3dcf6; --heat-2: #a6b8f0; --heat-3: #6f8ce8; --heat-4: #3d5afe; --heat-5: #2337b8;
   --shadow: 0 1px 0 rgba(14, 20, 32, .04), 0 1px 3px rgba(14, 20, 32, .05), 0 12px 32px -18px rgba(14, 20, 32, .22);
   --ring: 0 0 0 1px var(--rule);
-  --c-claude: #d0683c; --c-codex: #3a404b; --c-antigravity: #3d6ef0; --c-openrouter: #7c5ce0;
+  --c-claude: #d0683c; --c-codex: #3a404b; --c-antigravity: #3d6ef0; --c-openrouter: #7c5ce0; --c-copilot: #2a8a66;
   --dry: rgba(208, 57, 44, .14);
   --sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --num: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -42,7 +42,7 @@
     --t-input: #5b8cff; --t-output: #f07a45; --t-write: #2bc48a; --t-read: #d9a12a;
     --heat-0: #14171d; --heat-1: #1b2443; --heat-2: #24357a; --heat-3: #3550c4; --heat-4: #6a80ff; --heat-5: #b3bfff;
     --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 40px -20px rgba(0, 0, 0, .8);
-    --c-claude: #f0895e; --c-codex: #c9ced8; --c-antigravity: #7ea1ff; --c-openrouter: #ae93ff;
+    --c-claude: #f0895e; --c-codex: #c9ced8; --c-antigravity: #7ea1ff; --c-openrouter: #ae93ff; --c-copilot: #63cfa2;
     --dry: rgba(255, 107, 92, .16);
     color-scheme: dark;
   }
@@ -58,7 +58,7 @@
   --t-input: #5b8cff; --t-output: #f07a45; --t-write: #2bc48a; --t-read: #d9a12a;
   --heat-0: #14171d; --heat-1: #1b2443; --heat-2: #24357a; --heat-3: #3550c4; --heat-4: #6a80ff; --heat-5: #b3bfff;
   --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 16px 40px -20px rgba(0, 0, 0, .8);
-  --c-claude: #f0895e; --c-codex: #c9ced8; --c-antigravity: #7ea1ff; --c-openrouter: #ae93ff;
+  --c-claude: #f0895e; --c-codex: #c9ced8; --c-antigravity: #7ea1ff; --c-openrouter: #ae93ff; --c-copilot: #63cfa2;
   --dry: rgba(255, 107, 92, .16);
   color-scheme: dark;
 }
@@ -156,7 +156,7 @@ main:focus, main:focus-visible { outline: none; }
 .ptile .ic { width: 17px; height: 17px; vertical-align: 0; }
 .ptile.sm { width: 22px; height: 22px; border-radius: 6px; }
 .ptile.sm .ic { width: 13px; height: 13px; }
-.p-claude { --ph: var(--c-claude); } .p-codex { --ph: var(--c-codex); } .p-antigravity { --ph: var(--c-antigravity); } .p-openrouter { --ph: var(--c-openrouter); } .p-other { --ph: var(--ink-3); }
+.p-claude { --ph: var(--c-claude); } .p-codex { --ph: var(--c-codex); } .p-antigravity { --ph: var(--c-antigravity); } .p-openrouter { --ph: var(--c-openrouter); } .p-copilot { --ph: var(--c-copilot); } .p-other { --ph: var(--ink-3); }
 .go { display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; color: var(--pen-blue); text-decoration: none; border-radius: 5px; padding: 2px 2px 2px 6px; }
 .go:hover { text-decoration: underline; text-underline-offset: 3px; }
 
@@ -773,6 +773,7 @@ dialog h3 { font-size: 16px; margin-bottom: 8px; }
     <symbol id="p-codex" viewBox="0 0 16 16"><path d="m3.5 5 3 3-3 3M8.5 11.5h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="p-antigravity" viewBox="0 0 16 16"><path d="M8 13.5V4M4.5 7.5 8 4l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 13.5a8 3 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".6"/></symbol>
     <symbol id="p-openrouter" viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.7" fill="currentColor"/><circle cx="12.5" cy="3.8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="12.5" cy="12.2" r="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.2 8h2.3c1.5 0 1.7-4.2 3.5-4.2M7.5 8c1.5 0 1.7 4.2 3.5 4.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="p-copilot" viewBox="0 0 16 16"><rect x="2" y="4.5" width="12" height="8" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 7.6v2M10 7.6v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
   </defs>
 </svg>
 
@@ -1039,7 +1040,7 @@ const I18N = {
     est: "estimate", cap: "cap", per_hour: "{v}/h", no_window: "no open window", from_app: "from the app", entered: "entered {a}",
     set_app: "Enter app %", app_title: "Claude app percentages", app_help: "Type the “used” numbers from the Claude app's usage settings. Kept only on this computer.",
     app_5h: "5-hour used %", app_week: "Weekly used %", app_model: "Model weekly used %", save: "Save", cancel: "Cancel", close: "Close",
-    status_ok: "ok", status_low: "low", status_empty: "empty", status_off: "off",
+    status_ok: "ok", status_low: "low", status_empty: "empty", status_off: "off", no_login: "not signed in", wk_done: "weekly limit used up", cp_left: "{r}/{l} credits left", ev_copilot: "Copilot monthly credits reset", legacy: "legacy",
     week_short: "wk", h5_short: "5h", monthly: "monthly", weekly: "weekly", h5: "5-hour",
     free_requests: "free requests/day", credit: "credit", no_credit: "no credit", paid: "paid", free_tier: "free tier",
     agents_on: "agents: {a}", no_agents: "no agents",
@@ -1101,6 +1102,8 @@ const I18N = {
       run_long: ["{agent} · {issue} has been running for {minutes} minutes.", "A long run may be stuck; check the issue and cancel if needed."],
       agy_empty: ["Antigravity {account}: {group} {window} quota is used up ({left} left).", "Resets {reset}.{agents}"],
       agy_empty_agents: " Agents on this account using it: {a}; they can move to another account's runtime.",
+      agy_login: ["Antigravity {account}: not signed in.", "Its quota cannot be read. Open {command} in a terminal and sign in.{agents}"],
+      agy_login_agents: " Agents on this account: {a}.",
       scheduled_spend: ["Scheduled tasks spent {usd} today.", "Running them less often would save that."],
       switch_stopped: ["{name} is stopped.", "{description}"],
       on_fallback: ["{agent} is running on its fallback, {target}.", "Since {since}; {back}."],
@@ -1134,7 +1137,7 @@ const I18N = {
     est: "tahmin", cap: "tavan", per_hour: "saatte {v}", no_window: "açık pencere yok", from_app: "uygulamadan", entered: "{a} girildi",
     set_app: "Uygulama %'si gir", app_title: "Claude uygulamasındaki yüzdeler", app_help: "Claude uygulamasının kullanım ayarlarındaki “kullanıldı” sayılarını yaz. Yalnız bu bilgisayarda saklanır.",
     app_5h: "5 saatlik kullanılan %", app_week: "Haftalık kullanılan %", app_model: "Model haftalık kullanılan %", save: "Kaydet", cancel: "Vazgeç", close: "Kapat",
-    status_ok: "iyi", status_low: "az", status_empty: "bitti", status_off: "kapalı",
+    status_ok: "iyi", status_low: "az", status_empty: "bitti", status_off: "kapalı", no_login: "giriş yok", wk_done: "haftalık bitti", cp_left: "{r}/{l} kredi kaldı", ev_copilot: "Copilot aylık kredisi yenilenir", legacy: "eski",
     week_short: "hft", h5_short: "5s", monthly: "aylık", weekly: "haftalık", h5: "5 saatlik",
     free_requests: "ücretsiz istek/gün", credit: "kredi", no_credit: "kredi yok", paid: "ücretli", free_tier: "ücretsiz katman",
     agents_on: "ajanlar: {a}", no_agents: "ajan yok",
@@ -1196,6 +1199,8 @@ const I18N = {
       run_long: ["{agent} · {issue} koşusu {minutes} dakikadır sürüyor.", "Uzun koşu takılmış olabilir; işe bakıp gerekirse iptal et."],
       agy_empty: ["Antigravity {account}: {group} {window} kotası bitti ({left} kaldı).", "Sıfırlanma {reset}.{agents}"],
       agy_empty_agents: " Bu hesapta bunu kullanan ajanlar: {a}; başka hesabın runtime'ına taşınabilirler.",
+      agy_login: ["Antigravity {account}: giriş yok.", "Kotası okunamıyor. Terminalde {command} komutunu açıp giriş yap.{agents}"],
+      agy_login_agents: " Bu hesaba bağlı ajanlar: {a}.",
       scheduled_spend: ["Zamanlanmış görevler bugün {usd} harcadı.", "Daha seyrek çalıştırmak bunu azaltır."],
       switch_stopped: ["{name} durdurulmuş.", "{description}"],
       on_fallback: ["{agent} yedeğinde çalışıyor: {target}.", "{since|abl} beri; {back}."],
@@ -1320,6 +1325,12 @@ const KINDS = ["multica", "long", "interactive", "scheduled", "side"];
 const KVAR = k => `--k-${k}`;
 const WIN = w => ({"5h": t("h5"), weekly: t("weekly"), monthly: t("monthly")})[w] || w;
 const GROUP = g => g.replace("Claude and GPT models", "Claude / GPT").replace("Gemini Models", "Gemini").replace("Gemini 4 Argon", "Argon");
+// Antigravity: a 5-hour row reads "disabled" once its group's weekly limit is used up: shown as 0 until the weekly reset
+const agyRows = a => (a.rows || []).map(r => r.state === "weekly_done" || /^disabled$/i.test(r.left) ? {...r, left: "0%", reset: r.blocked_until || "", wdone: true} : r);
+const agyErr = a => a.signed_out ? t("no_login") : a.error;
+const agySub = (r, s) => r.wdone ? `${s} · ${t("wk_done")}` : s;
+const copilotRows = q => q.copilot && !q.copilot.error ? q.copilot.rows.filter(r => r.left != null) : [];
+const cpSub = (q, r) => [q.copilot.plan, t("cp_left", {r: r.remaining, l: r.limit})].filter(Boolean).join(" · ");
 const cssv = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 // ---------- state ----------
@@ -1378,7 +1389,7 @@ const STATUS_COLOR = {ok: "--green", low: "--amber", empty: "--pen-red", off: "-
 const icon = (n, cls = "") => `<svg class="ic ${cls}" aria-hidden="true"><use href="#${n.startsWith("p-") ? n : "i-" + n}"/></svg>`;
 const STATUS_IC = {ok: "ok", low: "low", empty: "empty", off: "off", fb: "swap"};
 const badge = (st, label) => `<span class="badge ${st}">${icon(STATUS_IC[st] || "info")}${esc(label ?? t(st === "fb" ? "status_fb" : "status_" + st))}</span>`;
-const PROV = name => /antigravity/i.test(name) ? "antigravity" : /openrouter/i.test(name) ? "openrouter" : /codex/i.test(name) ? "codex" : /claude/i.test(name) ? "claude" : "other";
+const PROV = name => /antigravity/i.test(name) ? "antigravity" : /openrouter/i.test(name) ? "openrouter" : /copilot/i.test(name) ? "copilot" : /codex/i.test(name) ? "codex" : /claude/i.test(name) ? "claude" : "other";
 const ptile = (name, sm) => { const k = PROV(name); return `<span class="ptile ${sm ? "sm" : ""} p-${k}" aria-hidden="true">${k === "other" ? icon("plug") : icon("p-" + k)}</span>`; };
 function statusIcon(parent, x, y, st) {  // drawn shapes: square ok, diamond low, triangle empty, ring off
   const c = `var(${STATUS_COLOR[st]})`;
@@ -1399,15 +1410,16 @@ function lanes(v) {
   const series = k => (H[k] || []).map(([ts, val]) => [new Date(ts).getTime(), val]);
   L.push({id: "claude", group: "Claude", sub: q.claude?.plan || "", claude: true});
   for (const [name, a] of Object.entries(v.antigravity || {})) {
-    if (a.error) { L.push({group: "Antigravity " + name, sub: a.error, error: true}); continue; }
-    for (const r of a.rows) {
+    if (a.error) { L.push({group: "Antigravity " + name, sub: agyErr(a), error: true}); continue; }
+    for (const r of agyRows(a)) {
       const w = /weekly/i.test(r.limit) ? "weekly" : /five hour/i.test(r.limit) ? "5h" : r.limit;
       const n = parseFloat(r.left);
-      L.push({group: "Antigravity " + name, sub: `${GROUP(r.group)} · ${WIN(w)}`, left: isNaN(n) ? null : n, off: isNaN(n), reset: r.reset,
+      L.push({group: "Antigravity " + name, sub: agySub(r, `${GROUP(r.group)} · ${WIN(w)}`), left: isNaN(n) ? null : n, off: isNaN(n), reset: r.reset,
         pts: series(`agy|${name}|${r.group}|${w}`), agents: (a.runtimes || []).flatMap(rt => v.runtimes[rt]?.agents || []), note: a.note});
     }
   }
   if (q.codex && !q.codex.error) for (const r of q.codex.rows) L.push({group: "Codex", sub: `${q.codex.plan || ""} · ${WIN(r.window)}`, left: r.left, reset: r.reset, pts: series(`codex|${r.window}`)});
+  for (const r of copilotRows(q)) L.push({group: "Copilot", sub: `${cpSub(q, r)} · ${WIN(r.window)}`, left: r.left, reset: r.reset, pts: series(`copilot|${r.window}`), agents: v.runtimes?.Copilot?.agents || []});
   if (q.openrouter && !q.openrouter.error) {
     const fr = q.openrouter.rows.find(r => r.kind === "free_requests");
     if (fr) L.push({group: "OpenRouter", sub: `${t("free_requests")} · ${fr.remaining}/${fr.limit}`, left: fr.left, pts: series("openrouter|free_requests")});
@@ -1606,7 +1618,7 @@ function adviceText(rule, p) {
   if (P.group) P.group = GROUP(P.group);
   if (Array.isArray(P.allowed)) P.allowed = P.allowed.join(", ");
   if (Array.isArray(P.reasons)) P.reasons = P.reasons.join(", ");
-  if (rule === "agy_empty") P.agents = P.agents?.length ? (I18N[LANG].adv.agy_empty_agents || I18N.en.adv.agy_empty_agents).replace("{a}", P.agents.join(", ")) : "";
+  if (rule === "agy_empty" || rule === "agy_login") P.agents = P.agents?.length ? (I18N[LANG].adv[rule + "_agents"] || I18N.en.adv[rule + "_agents"]).replace("{a}", P.agents.join(", ")) : "";
   if (!P.issue) P.issue = t("no_issue");
   const tpl = (I18N[LANG].adv[rule] || I18N.en.adv[rule] || [rule, ""]);
   return tpl.map(s => fill(s, P));
@@ -1667,12 +1679,14 @@ function quotaModel(v) {
   } else Q.push({key: "claude", name: "Claude", sub: [q.claude?.plan, t("window_5h")].filter(Boolean).join(" · "), left: null, main: t("no_window"), rel: ""});
   if (q.codex && !q.codex.error) for (const r of q.codex.rows) Q.push({name: "Codex", sub: [q.codex.plan, WIN(r.window)].filter(Boolean).join(" · "), left: r.left, tl: timeLeft(r.reset, r.window), main: r.reset ? t("resets_at", {t: when(r.reset)}) : t("no_reset"), rel: r.reset ? t("in_x", {d: until(r.reset)}) : "", reset: r.reset});
   else if (q.codex?.error) Q.push({name: "Codex", sub: q.codex.error, left: null, main: t("status_off"), rel: ""});
+  for (const r of copilotRows(q)) Q.push({name: "Copilot", sub: `${cpSub(q, r)} · ${WIN(r.window)}`, left: r.left, tl: timeLeft(r.reset, r.window), main: r.reset ? t("resets_at", {t: when(r.reset)}) : t("no_reset"), rel: r.reset ? t("in_x", {d: until(r.reset)}) : "", reset: r.reset, agents: v.runtimes?.Copilot?.agents || []});
+  if (q.copilot?.error) Q.push({name: "Copilot", sub: q.copilot.error, left: null, main: t("status_off"), rel: ""});
   for (const [name, a] of Object.entries(v.antigravity || {})) {
     const label = "Antigravity " + name;
-    if (a.error || !a.rows?.length) { Q.push({name: label, sub: a.error || t("status_off"), left: null, main: t("status_off"), rel: ""}); continue; }
-    const kids = a.rows.map(r => {
+    if (a.error || !a.rows?.length) { Q.push({name: label, sub: agyErr(a) || t("status_off"), left: null, main: a.signed_out ? t("no_login") : t("status_off"), rel: ""}); continue; }
+    const kids = agyRows(a).map(r => {
       const wn = /weekly/i.test(r.limit) ? "weekly" : /five hour/i.test(r.limit) ? "5h" : r.limit, n = parseFloat(r.left);
-      return {name: GROUP(r.group), sub: WIN(wn), left: isNaN(n) ? null : n, tl: timeLeft(r.reset, wn), main: r.reset ? t("resets_at", {t: when(r.reset)}) : t("no_reset"), rel: r.reset ? t("in_x", {d: until(r.reset)}) : "", reset: r.reset};
+      return {name: GROUP(r.group), sub: agySub(r, WIN(wn)), left: isNaN(n) ? null : n, tl: timeLeft(r.reset, wn), main: r.reset ? t("resets_at", {t: when(r.reset)}) : t("no_reset"), rel: r.reset ? t("in_x", {d: until(r.reset)}) : "", reset: r.reset};
     });
     const read = kids.filter(k => k.left != null), tight = read.length ? read.reduce((m, k) => k.left < m.left || (k.left === m.left && (k.reset || "") < (m.reset || "")) ? k : m) : null;
     const agents = (a.runtimes || []).flatMap(rt => v.runtimes?.[rt]?.agents || []);
@@ -1733,12 +1747,14 @@ function lanesModel(v) {
   }
   if (q.codex && !q.codex.error) for (const r of q.codex.rows) add({key: "codex|" + r.window, p: "codex", name: "Codex", sub: q.codex.plan || "", win: r.window, left: r.left, reset: r.reset, pts: ser(`codex|${r.window}`), rate: burnRate(ser(`codex|${r.window}`), 72)});
   else if (q.codex?.error) add({key: "codex", p: "codex", name: "Codex", sub: q.codex.error, win: "monthly", left: null});
+  for (const r of copilotRows(q)) add({key: "copilot|" + r.window, p: "copilot", name: "Copilot", sub: cpSub(q, r), win: r.window, left: r.left, reset: r.reset, pts: ser(`copilot|${r.window}`), rate: burnRate(ser(`copilot|${r.window}`), 72), agents: v.runtimes?.Copilot?.agents || []});
+  if (q.copilot?.error) add({key: "copilot", p: "copilot", name: "Copilot", sub: q.copilot.error, win: "monthly", left: null});
   for (const [name, a] of Object.entries(v.antigravity || {})) {
     const agents = (a.runtimes || []).flatMap(rt => v.runtimes?.[rt]?.agents || []);
-    if (a.error || !a.rows?.length) { add({key: "agy|" + name, p: "antigravity", name: "Antigravity", sub: `${name} · ${a.error || t("status_off")}`, win: "weekly", left: null, agents}); continue; }
-    for (const r of a.rows) {
+    if (a.error || !a.rows?.length) { add({key: "agy|" + name, p: "antigravity", name: "Antigravity", sub: `${name} · ${agyErr(a) || t("status_off")}`, win: "weekly", left: null, agents}); continue; }
+    for (const r of agyRows(a)) {
       const wn = /weekly/i.test(r.limit) ? "weekly" : /five hour/i.test(r.limit) ? "5h" : r.limit, n = parseFloat(r.left), k = `agy|${name}|${r.group}|${wn}`;
-      add({key: k, p: "antigravity", name: "Antigravity", sub: `${name} · ${GROUP(r.group)}`, win: wn, left: isNaN(n) ? null : n, reset: r.reset, pts: ser(k), rate: burnRate(ser(k), wn === "5h" ? 1.5 : 24), agents});
+      add({key: k, p: "antigravity", name: "Antigravity", sub: agySub(r, `${name} · ${GROUP(r.group)}`), win: wn, left: isNaN(n) ? null : n, reset: r.reset, pts: ser(k), rate: burnRate(ser(k), wn === "5h" ? 1.5 : 24), agents});
     }
   }
   if (q.openrouter && !q.openrouter.error) {
@@ -1916,7 +1932,9 @@ function calEvents(v) {
   const wr = q.claude?.manual?.weekly_reset;
   if (wr && !isNaN(new Date(wr))) { const base = +new Date(wr), wk = 7 * 86400e3; for (let k = Math.floor((Date.now() - 50 * 86400e3 - base) / wk); base + k * wk < Date.now() + 50 * 86400e3; k++) push(base + k * wk, {p: "claude", label: t("ev_claude_week"), short: t("week_short"), big: true}); }
   if (q.codex && !q.codex.error) for (const r of q.codex.rows) push(r.reset, {p: "codex", label: t("ev_codex", {w: WIN(r.window)}), short: WIN(r.window), left: r.left, big: true});
+  for (const r of copilotRows(q)) push(r.reset, {p: "copilot", label: t("ev_copilot"), short: "Copilot", left: r.left, big: true});
   for (const [name, a] of Object.entries(v.antigravity || {})) for (const r of a.rows || []) {
+    if (r.state === "weekly_done") continue;  // nothing of its own to reset: it reopens with the weekly limit
     const wn = /weekly/i.test(r.limit) ? "weekly" : /five hour/i.test(r.limit) ? "5h" : r.limit, n = parseFloat(r.left);
     push(r.reset, {p: "antigravity", label: t("ev_agy", {a: name, g: GROUP(r.group), w: WIN(wn)}), short: `${name} ${wn === "5h" ? t("h5_short") : t("week_short")}`, grp: name + wn, left: isNaN(n) ? null : n, big: wn !== "5h"});
   }
@@ -1984,7 +2002,7 @@ function renderCal(v) {
       : `<p class="state" style="padding:4px 0">${esc(t(isToday && dl.length ? "day_none_left" : "day_none"))}</p>`)
     + (gone.length ? `<button type="button" class="link cal-past" id="cal_past">${esc(t(CAL.past ? "day_hide_past" : "day_show_past", {n: gone.length}))}</button>` : "")
     + (!v.quotas?.claude?.manual?.weekly_reset ? `<p class="cal-hint">${icon("info", "sm")} <a class="link" href="#settings/claude">${esc(t("no_weekly"))}</a></p>` : "")
-    + `<div class="cal-legend"><span>${ptile("claude", true)}Claude</span><span>${ptile("codex", true)}Codex</span><span>${ptile("antigravity", true)}Antigravity</span><span>${ptile("openrouter", true)}OpenRouter</span><span>${PTILE("fb")}${esc(t("cal_fb"))}</span><span><i class="tone-sw"></i>${esc(t("cal_tone"))}</span></div>`;
+    + `<div class="cal-legend"><span>${ptile("claude", true)}Claude</span><span>${ptile("codex", true)}Codex</span><span>${ptile("antigravity", true)}Antigravity</span><span>${ptile("openrouter", true)}OpenRouter</span><span>${ptile("copilot", true)}Copilot</span><span>${PTILE("fb")}${esc(t("cal_fb"))}</span><span><i class="tone-sw"></i>${esc(t("cal_tone"))}</span></div>`;
 }
 $("cal_mode").querySelectorAll("button").forEach(b => b.onclick = () => { F.cal = b.dataset.cm; save(); CAL.anchor = CAL.sel; safe(renderCal); });
 const calShift = k => { const m = F.cal === "month"; CAL.anchor = m ? new Date(CAL.anchor.getFullYear(), CAL.anchor.getMonth() + k, 1) : addD(CAL.anchor, 7 * k); CAL.sel = m ? CAL.anchor : addD(CAL.sel, 7 * k); safe(renderCal); };
@@ -2234,9 +2252,10 @@ function renderAgents(v) {
   $("agents").innerHTML = list.length ? `<table><thead><tr><th>${esc(t("a_agent"))}</th><th>${esc(t("a_runtime"))}</th><th>${esc(t("a_model"))}</th><th>${esc(t("a_thinking"))}</th><th></th></tr></thead><tbody>
     ${list.map(a => {
       const i = v.agents.indexOf(a), c = catOf(a), [base, lvl] = splitModel(a, c);
-      const models = Object.keys(c.models).sort();
+      const models = Object.keys(c.models).filter(m => m === base || !(c.hidden || []).includes(m)).sort();
+      const mlabel = m => (c.legacy || []).includes(m) ? `${m} (${t("legacy")})` : m;
       return `<tr><td>${esc(a.name)}</td><td class="cell-sub">${esc(a.runtime)}</td>
-        <td><select class="sel" data-i="${i}" data-f="model">${models.map(m => `<option ${m === base ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></td>
+        <td><select class="sel" data-i="${i}" data-f="model">${models.map(m => `<option value="${esc(m)}" title="${esc(c.about?.[m] || "")}" ${m === base ? "selected" : ""}>${esc(mlabel(m))}</option>`).join("")}</select></td>
         <td><select class="sel" data-i="${i}" data-f="thinking">${levelOptions(c, base, lvl)}</select></td>
         <td><button class="btn" data-i="${i}" disabled>${esc(t("apply"))}</button></td></tr>`;
     }).join("")}</tbody></table>` : `<div class="empty">${esc(t("no_agents_list"))}</div>`;
